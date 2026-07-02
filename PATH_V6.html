@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PATH: A Coastal Erosion Risk Tool</title>
+<style>
+  :root{
+    --ice:#eef4f8; --ice2:#dce8f0; --deep:#103a5c; --deep2:#1d5b86; --sea:#2f7fb3;
+    --land:#f3ede1; --ink:#1d2733; --muted:#5a6b7a; --line:#cdd8e1; --card:#fff;
+    --low:#2e8b57; --low-bg:#e4f3ea; --mod:#e0a000; --mod-bg:#fcf3d9; --high:#c0392b; --high-bg:#fbe6e3;
+    --shadow:0 1px 3px rgba(16,58,92,.08),0 4px 16px rgba(16,58,92,.06); --radius:12px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--ice);line-height:1.5;font-size:15px}
+  h1,h2,h3{margin:0 0 .4em;line-height:1.25;color:var(--deep)} h1{font-size:1.35rem} h2{font-size:1.12rem} h3{font-size:1rem}
+  p{margin:0 0 .7em} a{color:var(--deep2)}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 18px 70px}
+  header.app{background:linear-gradient(135deg,var(--deep),var(--deep2));color:#fff;padding:20px 0 16px;box-shadow:var(--shadow)}
+  header.app .wrap{padding-bottom:0}
+  header.app h1{color:#fff;display:flex;align-items:center;gap:10px}
+  header.app p{color:#d6e6f1;margin:0;max-width:820px;font-size:.93rem}
+  .badge{display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:.7rem;padding:2px 9px;border-radius:999px;vertical-align:middle}
+
+  .tabs{display:flex;gap:6px;margin:16px 0 0;border-bottom:2px solid var(--line);flex-wrap:wrap}
+  .tab{appearance:none;border:none;background:transparent;cursor:pointer;padding:11px 16px;font-size:.93rem;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;border-radius:8px 8px 0 0}
+  .tab:hover{color:var(--deep);background:var(--ice2)} .tab.active{color:var(--deep);border-bottom-color:var(--sea);background:var(--card)}
+  .tab .n{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;background:var(--ice2);color:var(--deep);border-radius:50%;font-size:.72rem;margin-right:7px}
+  .tab.active .n{background:var(--sea);color:#fff}
+  .panel{display:none;padding:20px 0} .panel.active{display:block;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin:0 0 18px}
+  .card>h2:first-child{margin-top:0} .card .hint{color:var(--muted);font-size:.85rem;margin:-2px 0 14px}
+
+  .grid{display:grid;gap:14px} .grid.c2{grid-template-columns:repeat(2,1fr)} .grid.c3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:680px){.grid.c2,.grid.c3{grid-template-columns:1fr}}
+  label.field{display:flex;flex-direction:column;gap:5px;font-size:.82rem;font-weight:600;color:var(--deep)}
+  label.field .sub{font-weight:400;color:var(--muted);font-size:.78rem}
+  input[type=text],input[type=number],select,textarea{font:inherit;font-size:.92rem;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--sea);box-shadow:0 0 0 3px rgba(47,127,179,.15)}
+
+  .btn{appearance:none;cursor:pointer;font:inherit;font-weight:600;font-size:.9rem;border-radius:9px;padding:10px 16px;border:1px solid transparent;display:inline-flex;align-items:center;gap:7px}
+  .btn.primary{background:var(--sea);color:#fff} .btn.primary:hover{background:var(--deep2)}
+  .btn.ghost{background:#fff;border-color:var(--line);color:var(--deep)} .btn.ghost:hover{background:var(--ice)}
+  .btn.sm{padding:7px 12px;font-size:.82rem}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px} .toolbar .spacer{flex:1}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table.assets{border-collapse:collapse;width:100%;min-width:560px;font-size:.9rem}
+  table.assets th,table.assets td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+  table.assets thead th{background:var(--ice);color:var(--deep);font-size:.76rem;text-transform:uppercase;letter-spacing:.03em}
+  table.assets td input,table.assets td select{padding:7px 8px;font-size:.88rem}
+  table.assets td.num input{text-align:right}
+  table.assets .rownum{color:var(--muted);width:26px;text-align:center;font-size:.8rem}
+  .delrow{border:none;background:var(--high-bg);color:var(--high);border-radius:6px;width:28px;height:28px;cursor:pointer}
+  .delrow:hover{background:#f6cfc9}
+
+  ol.how-list{margin:2px 0 0;padding-left:22px} ol.how-list li{margin:5px 0}
+  .dropzone{border:2px dashed var(--line);border-radius:12px;background:var(--ice);text-align:center;transition:.15s}
+  .dropzone.drag{border-color:var(--sea);background:#e8f2f9}
+  .dropzone.done{border-style:solid;border-color:var(--low);background:var(--low-bg)}
+  .dz-inner{padding:20px 16px} .dz-ico{font-size:1.6rem;color:var(--sea)}
+  .linklike{color:var(--deep2);font-weight:700;cursor:pointer;text-decoration:underline}
+  .scan-box{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px}
+  .scan-box.ok{border-left:4px solid var(--low);background:var(--low-bg)}
+  .scan-box.warn{border-left:4px solid var(--mod);background:var(--mod-bg)}
+  .scan-box h3{margin:0 0 6px}
+  .uphead{display:flex;align-items:center;gap:8px;margin:0 0 8px} .uphead h3{margin:0}
+
+  .stepnav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .stepnav.end{justify-content:flex-end} .stepnav .btn.primary{font-size:.98rem;padding:12px 22px}
+
+  .reqtag{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--ice2);color:var(--deep);padding:2px 8px;border-radius:999px;vertical-align:middle;margin-left:6px}
+  .settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+
+  /* figures */
+  .figs{display:flex;flex-direction:column;gap:28px}
+  .fig{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;box-shadow:var(--shadow)}
+  .fig .fhead{padding:11px 16px;background:var(--ice);border-bottom:1px solid var(--line)}
+  .fig .fhead h3{margin:0} .fig .fhead .fsub{font-size:.8rem;color:var(--muted)}
+  .fig .fbody{display:grid;grid-template-columns:1fr 250px;gap:0}
+  .fig .fbody.nolegend{grid-template-columns:1fr}
+  @media(max-width:760px){.fig .fbody{grid-template-columns:1fr}}
+  .fig .fmain{padding:10px} .fig .fmain svg{display:block;width:100%;height:auto}
+  .fig .fside{border-left:1px solid var(--line);padding:12px 14px;font-size:.82rem;background:#fcfdfe}
+  @media(max-width:760px){.fig .fside{border-left:none;border-top:1px solid var(--line)}}
+  .fig .fside h4{margin:0 0 6px;font-size:.8rem;text-transform:uppercase;letter-spacing:.03em;color:var(--deep)}
+  .leg{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+  .leg .k{display:flex;align-items:center;gap:8px;font-size:.8rem}
+  .sw{width:16px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.15);flex:none}
+  .assetlist{margin:0;padding:0;list-style:none;font-size:.8rem;columns:1}
+  .assetlist li{padding:2px 0;display:flex;gap:7px;align-items:baseline}
+  .anum{display:inline-flex;width:19px;height:19px;flex:none;align-items:center;justify-content:center;background:var(--deep);color:#fff;border-radius:50%;font-size:.68rem;font-weight:700}
+  .muted{color:var(--muted)}
+
+  .pages{display:flex;flex-direction:column;gap:20px}
+  .pageprev{border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);background:#fff}
+  .pageprev svg{display:block;width:100%;height:auto}
+  .empty{color:var(--muted);text-align:center;padding:40px 20px}
+  footer.app{color:var(--muted);font-size:.8rem;text-align:center;padding:22px 18px;border-top:1px solid var(--line);margin-top:26px}
+  footer.app a{color:var(--deep2)}
+  @media print{.tabs,.stepnav,.no-print,header.app .badge{display:none !important}}
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="wrap">
+    <h1>🌊 PATH: A Coastal Erosion Risk Tool <span class="badge">Arctic Communities</span></h1>
+    <p>Build a community asset inventory, have a consultant map the shoreline recession along a series of transects, and then turn the info into clear vulnerability and risk maps that a community can use to address their erosion risk.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="summary" role="tab"><span class="n">1</span>Summary</button>
+    <button class="tab" data-tab="inventory" role="tab"><span class="n">2</span>Asset Inventory Generator</button>
+    <button class="tab" data-tab="hazard" role="tab"><span class="n">3</span>Erosion Hazard Input</button>
+  </div>
+
+  <!-- ============ SUMMARY ============ -->
+  <section id="panel-summary" class="panel active" role="tabpanel">
+    <div class="card">
+      <h2>How this tool works</h2>
+      <p class="hint">Two people, two sheets. New here? Download the walkthrough and keep it beside you.</p>
+      <ol class="how-list">
+        <li><b>Community Administrator</b> — lists community assets (name, location, consequence) on the <b>Asset Inventory Generator</b> page, optionally sets the time horizons, and downloads the <b>asset inventory</b> to share.</li>
+        <li><b>Consultant / engineer</b> — fills a separate <b>transect sheet</b>: for each shoreline transect, its coordinates, its orientation (the compass bearing the shoreline recedes toward) and the projected recession (m) for a Baseline and a High scenario at three time horizons. The transects span far enough along the shore to cover every asset.</li>
+        <li><b>Community Administrator</b> — uploads <b>both</b> sheets on the <b>Erosion Hazard Input</b> page; the tool maps the recession envelopes, tests which assets fall inside them, and produces vulnerability &amp; risk maps plus a multi-page PDF.</li>
+      </ol>
+      <div class="toolbar"><button class="btn primary sm" id="dl-readme">⤓ Download walkthrough (README)</button></div>
+    </div>
+    <div class="stepnav end"><button class="btn primary" data-goto="inventory">Next: Asset Inventory Generator →</button></div>
+  </section>
+
+  <!-- ============ INVENTORY ============ -->
+  <section id="panel-inventory" class="panel" role="tabpanel">
+    <div class="card">
+      <h2>Community &amp; assets <span class="reqtag">Community Administrator</span></h2>
+      <p class="hint">List each community asset: <b>name, latitude, longitude</b> (decimal degrees) and <b>consequence</b> if it were lost. That is all the administrator provides. Confirm names and spellings with the community.</p>
+      <div class="grid c2" style="margin-bottom:14px">
+        <label class="field">Community / location <input type="text" id="f-community" placeholder="e.g. Tuktoyaktuk, NT" /></label>
+        <label class="field">Prepared by (administrator) <input type="text" id="f-admin" placeholder="Name / role" /></label>
+      </div>
+      <div class="tablewrap">
+        <table class="assets" id="asset-table"><thead id="asset-head"></thead><tbody id="asset-body"></tbody></table>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost sm" id="add-asset">＋ Add asset</button>
+        <button class="btn ghost sm" id="load-example">Load example community</button>
+      </div>
+      <h3 style="margin:18px 0 4px">Time horizons <span class="reqtag">optional</span></h3>
+      <p class="hint">You may set the three assessment years for the consultant. Leave blank to let the consultant choose.</p>
+      <div class="grid c3">
+        <label class="field">Time Horizon 1 <input type="text" id="f-h1" placeholder="e.g. 2040" /></label>
+        <label class="field">Time Horizon 2 <input type="text" id="f-h2" placeholder="e.g. 2065" /></label>
+        <label class="field">Time Horizon 3 <input type="text" id="f-h3" placeholder="e.g. 2100" /></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Download the two blank sheets</h2>
+      <p class="hint">Keep the <b>asset inventory</b> for the community record, and send the <b>transect sheet</b> to the coastal consultant / engineer. They are separate files — the consultant does not need the inventory to do their work, though it helps them see the assets in scope.</p>
+      <div class="grid c2">
+        <div>
+          <div class="uphead"><h3>Asset inventory</h3><span class="reqtag">Community Administrator</span></div>
+          <div class="toolbar" style="margin-top:0">
+            <button class="btn primary sm" id="gen-inv-xlsx">⤓ Excel (.xlsx)</button>
+            <button class="btn ghost sm" id="gen-inv-docx">⤓ Word (.docx)</button>
+            <button class="btn ghost sm" id="gen-inv-pdf">⤓ PDF (print)</button>
+          </div>
+        </div>
+        <div>
+          <div class="uphead"><h3>Transect sheet</h3><span class="reqtag">Consultant / Engineer</span></div>
+          <div class="toolbar" style="margin-top:0">
+            <button class="btn primary sm" id="gen-tr-xlsx">⤓ Excel (.xlsx)</button>
+            <button class="btn ghost sm" id="gen-tr-pdf">⤓ PDF (print)</button>
+          </div>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
+        <button class="btn ghost sm" id="save-json">⤓ Save working file (.json)</button>
+        <label class="btn ghost sm" style="cursor:pointer">⤒ Load working file<input type="file" id="load-json" accept=".json,application/json" hidden /></label>
+      </div>
+    </div>
+    <div class="stepnav">
+      <button class="btn ghost" data-goto="summary">← Back</button>
+      <button class="btn primary" data-goto="hazard">Next: Erosion Hazard Input →</button>
+    </div>
+  </section>
+
+  <!-- ============ HAZARD ============ -->
+  <section id="panel-hazard" class="panel" role="tabpanel">
+    <div class="card">
+      <h2>Upload the two input sheets</h2>
+      <p class="hint">This step needs <b>both</b> sheets: the Community Administrator’s <b>asset inventory</b> and the consultant’s <b>transect sheet</b>. Excel (.xlsx), CSV, or Word (.docx).</p>
+      <div class="grid c2">
+        <div>
+          <div class="uphead"><h3>1 · Asset inventory</h3><span class="reqtag">Administrator</span></div>
+          <div id="dz-inv" class="dropzone"><div class="dz-inner">
+            <div class="dz-ico">⤓</div>
+            <p><strong>Drop the inventory here</strong> or <label class="linklike" for="inv-file">choose a file</label>.</p>
+            <input type="file" id="inv-file" accept=".xlsx,.csv,.tsv,.docx" hidden />
+          </div></div>
+          <div id="inv-status"></div>
+        </div>
+        <div>
+          <div class="uphead"><h3>2 · Transect sheet</h3><span class="reqtag">Consultant</span></div>
+          <div id="dz-tr" class="dropzone"><div class="dz-inner">
+            <div class="dz-ico">⤓</div>
+            <p><strong>Drop the transect sheet here</strong> or <label class="linklike" for="tr-file">choose a file</label>.</p>
+            <input type="file" id="tr-file" accept=".xlsx,.csv,.tsv,.docx" hidden />
+          </div></div>
+          <div id="tr-status"></div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost sm" id="use-example">Use example data (both sheets)</button>
+        <span class="spacer"></span>
+      </div>
+    </div>
+
+    <div class="card" id="settings-card" style="display:none">
+      <h2>Map settings</h2>
+      <p class="hint">The shoreline and the map orientation come straight from the transect coordinates and bearings — nothing to set there. Adjust the low-vulnerability buffer if needed. <b>Confirm against local knowledge.</b></p>
+      <div class="settings">
+        <label class="field">Low-vulnerability buffer (m) <span class="sub">strip just beyond the High envelope</span>
+          <input type="number" id="s-buffer" value="20" step="5" min="0" /></label>
+      </div>
+    </div>
+
+    <div id="outputs"></div>
+
+    <div class="card no-print" id="dl-card" style="display:none">
+      <h2>Download the results</h2>
+      <p class="hint">Builds and downloads a poster-size (A0) PDF package directly — a title page, every map and grid on its own page, plain-English explainer pages, and reference tables at the end. No print dialog: the file saves straight to your downloads.</p>
+      <div class="toolbar"><button class="btn primary" id="dl-pdf">⤓ Download results PDF</button></div>
+    </div>
+
+    <div class="stepnav"><button class="btn ghost" data-goto="inventory">← Back</button></div>
+  </section>
+</div>
+
+<footer class="app">
+  <p><strong>About.</strong> Maps are drawn shore-aligned (sea at the bottom; the north arrow rotates to match) from the transect shoreline coordinates, with the receded shoreline placed by moving each transect point inland along its bearing by the projected recession. Lines are smoothed between transects and extended to the map edges — schematic, not surveyed. Vertical scale may be exaggerated (labelled on the map). Read alongside Inuit Qaujimajatuqangit and local knowledge.</p>
+  <p>Reference: Inuit Circumpolar Council, <a href="https://www.inuitcircumpolar.com/" target="_blank" rel="noopener">Circumpolar Inuit Protocols for Equitable and Ethical Engagement (EEE)</a>. Independent; not endorsed by the ICC.</p>
+</footer>
+
+<script>
+// ===== Self-contained vector PDF writer + SVG(subset)->PDF translator =====
+// Exposed as window.PDFKIT = { makePdfFromSvgs(svgStrings, {wmm,hmm}) -> Blob }
+(function(){
+  "use strict";
+  var MM=72/25.4; // mm -> pt
+
+  // ---- text width via canvas (matches Helvetica/Arial closely) ----
+  var _cv=document.createElement("canvas"), _cx=_cv.getContext("2d");
+  function textWidth(str,pt,bold){ _cx.font=(bold?"bold ":"")+pt+"px Helvetica, Arial, sans-serif"; return _cx.measureText(str).width; }
+
+  // ---- WinAnsi-ish encoding for the punctuation/accents we actually use ----
+  var WIN={0x2013:0x96,0x2014:0x97,0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2026:0x85,0x00B7:0xB7,0x00D7:0xD7,0x2192:0x0,0x2264:0x0};
+  function pdfString(s){
+    var out="";
+    for(var i=0;i<s.length;i++){ var c=s.charCodeAt(i), b;
+      if(c===0x2192) { out+="->"; continue; }               // → not in WinAnsi
+      if(c===0x2264) { out+="<="; continue; }
+      if(c<0x80) b=c; else if(WIN[c]!=null&&WIN[c]!==0) b=WIN[c]; else if(c<=0xFF) b=c; else b=0x3F;
+      if(b===0x28||b===0x29||b===0x5C) out+="\\"; // ( ) \
+      out+=String.fromCharCode(b);
+    }
+    return out;
+  }
+
+  function col(c){ // -> {r,g,b,a} 0..1, or null for none
+    if(!c||c==="none"||c==="transparent") return null;
+    c=String(c).trim();
+    if(c[0]==="#"){ var h=c.slice(1); if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+      return {r:parseInt(h.slice(0,2),16)/255,g:parseInt(h.slice(2,4),16)/255,b:parseInt(h.slice(4,6),16)/255,a:1}; }
+    var m=c.match(/rgba?\(([^)]+)\)/); if(m){ var p=m[1].split(",").map(function(x){return parseFloat(x);});
+      return {r:p[0]/255,g:p[1]/255,b:p[2]/255,a:p[3]==null?1:p[3]}; }
+    var named={white:[255,255,255],black:[0,0,0]}; if(named[c]){ var n=named[c]; return {r:n[0]/255,g:n[1]/255,b:n[2]/255,a:1}; }
+    return {r:0,g:0,b:0,a:1};
+  }
+  function f(n){ return (Math.round(n*1000)/1000); }
+
+  // ---- PDF document ----
+  function Doc(){ this.pages=[]; this.alphas={}; }
+  Doc.prototype.addPage=function(wpt,hpt,content){ this.pages.push({w:wpt,h:hpt,c:content}); };
+  Doc.prototype.gsName=function(a){ a=Math.round(a*100)/100; var nm="GS"+String(a).replace(".","_"); this.alphas[nm]=a; return nm; };
+  Doc.prototype.build=function(){
+    var self=this, objs=[], enc=[];
+    function obj(s){ objs.push(s); return objs.length; }             // returns 1-based obj number (index+1)
+    // placeholders order: 1 catalog, 2 pages, then fonts, gstates, then per-page [content, page]
+    var nCatalog=1, nPages=2, nFontR=3, nFontB=4;
+    objs[0]="<< /Type /Catalog /Pages "+nPages+" 0 R >>";
+    objs[2]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+    objs[3]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+    // gstate objects
+    var gsRefs={}; var names=Object.keys(this.alphas);
+    names.forEach(function(nm){ var num=obj("<< /Type /ExtGState /ca "+self.alphas[nm]+" /CA "+self.alphas[nm]+" >>"); gsRefs[nm]=num; });
+    var extg="<< "+names.map(function(nm){return "/"+nm+" "+gsRefs[nm]+" 0 R";}).join(" ")+" >>";
+    var res="<< /Font << /F1 "+nFontR+" 0 R /F2 "+nFontB+" 0 R >> /ExtGState "+extg+" >>";
+    var kids=[];
+    this.pages.forEach(function(pg){
+      var cnum=obj("<< /Length "+pg.c.length+" >>\nstream\n"+pg.c+"\nendstream");
+      var pnum=obj("<< /Type /Page /Parent "+nPages+" 0 R /MediaBox [0 0 "+f(pg.w)+" "+f(pg.h)+"] /Resources "+res+" /Contents "+cnum+" 0 R >>");
+      kids.push(pnum);
+    });
+    objs[1]="<< /Type /Pages /Count "+kids.length+" /Kids ["+kids.map(function(k){return k+" 0 R";}).join(" ")+"] >>";
+    // serialize
+    var head="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n", body="", offsets=[], pos=head.length;
+    for(var i=0;i<objs.length;i++){ offsets[i]=pos; var s=(i+1)+" 0 obj\n"+objs[i]+"\nendobj\n"; body+=s; pos+=s.length; }
+    var xrefPos=pos;
+    var xref="xref\n0 "+(objs.length+1)+"\n0000000000 65535 f \n";
+    for(var j=0;j<objs.length;j++){ xref+=("0000000000"+offsets[j]).slice(-10)+" 00000 n \n"; }
+    var trailer="trailer\n<< /Size "+(objs.length+1)+" /Root 1 0 R >>\nstartxref\n"+xrefPos+"\n%%EOF";
+    var pdf=head+body+xref+trailer;
+    // to bytes (latin1)
+    var bytes=new Uint8Array(pdf.length); for(var k=0;k<pdf.length;k++) bytes[k]=pdf.charCodeAt(k)&0xFF;
+    return bytes;
+  };
+
+  // ---- translate one SVG element tree into a page content stream ----
+  function svgToContent(doc, svgEl, pageW, pageH){
+    var vb=(svgEl.getAttribute("viewBox")||"").split(/[\s,]+/).map(Number);
+    var vx=vb[0]||0, vy=vb[1]||0, vw=vb[2]||svgEl.clientWidth||1000, vh=vb[3]||svgEl.clientHeight||1000;
+    // Render the SVG at exactly its viewBox size so getCTM() returns coordinates in viewBox
+    // units (not the holder's pixel size) — otherwise everything is scaled and spills off-page.
+    svgEl.setAttribute("width", vw); svgEl.setAttribute("height", vh);
+    // fit within page (contain), centered
+    var k=Math.min(pageW/vw, pageH/vh);
+    var ox=(pageW-vw*k)/2, oy=(pageH-vh*k)/2;
+    // viewBox point (X,Y) -> page point: px=ox+(X-vx)*k ; py=pageH-(oy+(Y-vy)*k)
+    function PX(X){ return ox+(X-vx)*k; }
+    function PY(Y){ return pageH-(oy+(Y-vy)*k); }
+    var out=[]; var curAlpha=1;
+    function setAlpha(a){ if(a==null)a=1; if(Math.abs(a-curAlpha)>0.001){ out.push("/"+doc.gsName(a)+" gs"); curAlpha=a; } }
+    function setFill(c){ out.push(f(c.r)+" "+f(c.g)+" "+f(c.b)+" rg"); }
+    function setStroke(c){ out.push(f(c.r)+" "+f(c.g)+" "+f(c.b)+" RG"); }
+    // matrix helpers (2x3: a b c d e f) mapping local->viewBox (from getCTM)
+    function ctm(el){ var m=el.getCTM&&el.getCTM(); if(!m) return {a:1,b:0,c:0,d:1,e:0,f:0}; return m; }
+    function apply(m,x,y){ return [m.a*x+m.c*y+m.e, m.b*x+m.d*y+m.f]; }      // local->viewBox
+    function toPage(pt){ return [PX(pt[0]), PY(pt[1])]; }
+    function num(el,a,d){ var v=el.getAttribute(a); return v==null||v===""?d:parseFloat(v); }
+    function strokeW(el,m){ var w=parseFloat(el.getAttribute("stroke-width")||"1"); var s=Math.sqrt(Math.abs(m.a*m.d-m.b*m.c))||1; return w*s*k; }
+    function dash(el,m){ var da=el.getAttribute("stroke-dasharray"); if(!da||da==="0"||da==="none")return null; var s=Math.sqrt(Math.abs(m.a*m.d-m.b*m.c))||1; return da.split(/[\s,]+/).map(function(x){return f(parseFloat(x)*s*k);}); }
+    function opAttr(el,name){ var v=el.getAttribute(name); return v==null?null:parseFloat(v); }
+
+    function pathPoints(el,m){ // for polyline/polygon "points"
+      var pts=(el.getAttribute("points")||"").trim().split(/\s+/).map(function(pr){var xy=pr.split(",").map(Number);return toPage(apply(m,xy[0],xy[1]));});
+      return pts;
+    }
+    function emitPolyPath(pts){ var s=f(pts[0][0])+" "+f(pts[0][1])+" m"; for(var i=1;i<pts.length;i++)s+=" "+f(pts[i][0])+" "+f(pts[i][1])+" l"; out.push(s); }
+
+    function walk(el){
+      var tag=el.tagName;
+      if(tag==="rect"){
+        var m=ctm(el); var x=num(el,"x",0),y=num(el,"y",0),w=num(el,"width",0),h=num(el,"height",0),rx=num(el,"rx",0);
+        var fillC=col(el.getAttribute("fill")||"#000"), strokeC=col(el.getAttribute("stroke"));
+        var fo=opAttr(el,"fill-opacity"), o=opAttr(el,"opacity");
+        // corners: approximate rounded rect with plain rect if rx small; draw as path of 4 corners
+        var p0=toPage(apply(m,x,y)), p1=toPage(apply(m,x+w,y)), p2=toPage(apply(m,x+w,y+h)), p3=toPage(apply(m,x,y+h));
+        if(fillC){ setAlpha((fo!=null?fo:1)*(o!=null?o:1)*fillC.a); setFill(fillC); emitPolyPath([p0,p1,p2,p3]); out.push("h f"); }
+        if(strokeC){ setAlpha((o!=null?o:1)*strokeC.a); setStroke(strokeC); out.push(f(strokeW(el,m))+" w"); emitPolyPath([p0,p1,p2,p3]); out.push("h S"); }
+      } else if(tag==="line"){
+        var m2=ctm(el); var a=toPage(apply(m2,num(el,"x1",0),num(el,"y1",0))), b=toPage(apply(m2,num(el,"x2",0),num(el,"y2",0)));
+        var sc=col(el.getAttribute("stroke")||"#000"); setAlpha((opAttr(el,"opacity")!=null?opAttr(el,"opacity"):1)*sc.a); setStroke(sc);
+        out.push(f(strokeW(el,m2))+" w"); var d=dash(el,m2); out.push(d?("["+d.join(" ")+"] 0 d"):"[] 0 d");
+        out.push(f(a[0])+" "+f(a[1])+" m "+f(b[0])+" "+f(b[1])+" l S"); out.push("[] 0 d");
+      } else if(tag==="polyline"||tag==="polygon"){
+        var m3=ctm(el); var pts=pathPoints(el,m3); if(!pts.length)return;
+        var fillC3=col(el.getAttribute("fill")), strokeC3=col(el.getAttribute("stroke"));
+        var fo3=opAttr(el,"fill-opacity"), o3=opAttr(el,"opacity");
+        if(tag==="polygon" && fillC3){ setAlpha((fo3!=null?fo3:1)*(o3!=null?o3:1)*fillC3.a); setFill(fillC3); emitPolyPath(pts); out.push("h f"); }
+        if(tag==="polyline" && fillC3 && (el.getAttribute("fill")&&el.getAttribute("fill")!=="none")){ setAlpha((fo3!=null?fo3:1)*fillC3.a); setFill(fillC3); emitPolyPath(pts); out.push("f"); }
+        if(strokeC3){ setAlpha((o3!=null?o3:1)*strokeC3.a); setStroke(strokeC3); out.push(f(strokeW(el,m3))+" w"); var d3=dash(el,m3); out.push(d3?("["+d3.join(" ")+"] 0 d"):"[] 0 d"); emitPolyPath(pts); out.push(tag==="polygon"?"h S":"S"); out.push("[] 0 d"); }
+      } else if(tag==="circle"){
+        var m4=ctm(el); var cx=num(el,"cx",0),cy=num(el,"cy",0),r=num(el,"r",0);
+        var s4=Math.sqrt(Math.abs(m4.a*m4.d-m4.b*m4.c))||1; var C=toPage(apply(m4,cx,cy)); var rp=r*s4*k;
+        var kk=0.5522847498*rp;
+        var fillC4=col(el.getAttribute("fill")), strokeC4=col(el.getAttribute("stroke"));
+        // bezier circle
+        var cxp=C[0],cyp=C[1];
+        var pathC="{0} {1} m ".replace("{0}",f(cxp+rp)).replace("{1}",f(cyp))
+          +f(cxp+rp)+" "+f(cyp+kk)+" "+f(cxp+kk)+" "+f(cyp+rp)+" "+f(cxp)+" "+f(cyp+rp)+" c "
+          +f(cxp-kk)+" "+f(cyp+rp)+" "+f(cxp-rp)+" "+f(cyp+kk)+" "+f(cxp-rp)+" "+f(cyp)+" c "
+          +f(cxp-rp)+" "+f(cyp-kk)+" "+f(cxp-kk)+" "+f(cyp-rp)+" "+f(cxp)+" "+f(cyp-rp)+" c "
+          +f(cxp+kk)+" "+f(cyp-rp)+" "+f(cxp+rp)+" "+f(cyp-kk)+" "+f(cxp+rp)+" "+f(cyp)+" c";
+        if(fillC4){ setAlpha((opAttr(el,"opacity")!=null?opAttr(el,"opacity"):1)*fillC4.a); setFill(fillC4); out.push(pathC+" f"); }
+        if(strokeC4){ setAlpha((opAttr(el,"opacity")!=null?opAttr(el,"opacity"):1)*strokeC4.a); setStroke(strokeC4); out.push(f(strokeW(el,m4))+" w"); out.push(pathC+" S"); }
+      } else if(tag==="text"){
+        var m5=ctm(el); var tx=num(el,"x",0), ty=num(el,"y",0);
+        var fs=parseFloat(el.getAttribute("font-size")||"12");
+        var bold=(el.getAttribute("font-weight")||"")>="600"||/bold|700|800/.test(el.getAttribute("font-weight")||"");
+        var anchor=el.getAttribute("text-anchor")||"start";
+        var fillC5=col(el.getAttribute("fill")||"#000");
+        var str=el.textContent;
+        var wlocal=textWidth(str,fs,bold);
+        var ax = anchor==="middle"?wlocal/2 : anchor==="end"?wlocal : 0;
+        // baseline origin in local coords (shift by anchor along local x)
+        var O=apply(m5,tx-ax,ty);
+        var Op=toPage(O);
+        // text x-axis direction on page (unit local x mapped)
+        var Xdir=apply(m5,tx-ax+1,ty), XdirP=toPage(Xdir);
+        var dx=XdirP[0]-Op[0], dy=XdirP[1]-Op[1]; var ang=Math.atan2(dy,dx);
+        var sscale=Math.sqrt(Math.abs(m5.a*m5.d-m5.b*m5.c))||1; var fpt=fs*sscale*k;
+        var ca=Math.cos(ang), sa=Math.sin(ang);
+        var tm=f(ca)+" "+f(sa)+" "+f(-sa)+" "+f(ca)+" "+f(Op[0])+" "+f(Op[1]);
+        var strokeC5=col(el.getAttribute("stroke")); var pw=parseFloat(el.getAttribute("stroke-width")||"0");
+        setAlpha(opAttr(el,"opacity")!=null?opAttr(el,"opacity"):1);
+        if(strokeC5 && pw>0){ // halo: draw stroked first
+          out.push("q"); out.push("BT /"+(bold?"F2":"F1")+" "+f(fpt)+" Tf 1 Tr "+f(pw*sscale*k)+" w "+f(strokeC5.r)+" "+f(strokeC5.g)+" "+f(strokeC5.b)+" RG "+f(strokeC5.r)+" "+f(strokeC5.g)+" "+f(strokeC5.b)+" rg "+tm+" Tm ("+pdfString(str)+") Tj ET"); out.push("Q");
+        }
+        out.push("BT /"+(bold?"F2":"F1")+" "+f(fpt)+" Tf 0 Tr "+f(fillC5.r)+" "+f(fillC5.g)+" "+f(fillC5.b)+" rg "+tm+" Tm ("+pdfString(str)+") Tj ET");
+      }
+      // recurse
+      var ch=el.children; for(var i=0;i<ch.length;i++) walk(ch[i]);
+    }
+    // walk children of svg (skip the svg root itself)
+    var c=svgEl.children; for(var i=0;i<c.length;i++) walk(c[i]);
+    return out.join("\n");
+  }
+
+  function makePdfFromSvgs(svgStrings, opt){
+    opt=opt||{}; var wpt=(opt.wmm||1189)*MM, hpt=(opt.hmm||841)*MM;
+    var doc=new Doc();
+    var holder=document.createElement("div");
+    holder.setAttribute("style","position:fixed;left:-99999px;top:0;width:2000px;height:1500px;overflow:hidden");
+    document.body.appendChild(holder);
+    try{
+      svgStrings.forEach(function(svgStr){
+        holder.innerHTML=svgStr; var svgEl=holder.querySelector("svg");
+        var content=svgToContent(doc, svgEl, wpt, hpt);
+        doc.addPage(wpt,hpt,content);
+      });
+    } finally { document.body.removeChild(holder); }
+    var bytes=doc.build();
+    return new Blob([bytes],{type:"application/pdf"});
+  }
+
+  window.PDFKIT={ makePdfFromSvgs:makePdfFromSvgs, textWidth:textWidth };
+})();
+</script>
+<script>
+"use strict";
+(function(){
+  // ---------------- helpers ----------------
+  function $(id){return document.getElementById(id);}
+  function el(t,a,k){var n=document.createElement(t);if(a)for(var x in a){if(x==="class")n.className=a[x];else if(x==="html")n.innerHTML=a[x];else if(x.slice(0,2)==="on")n.addEventListener(x.slice(2),a[x]);else if(a[x]!=null)n.setAttribute(x,a[x]);}(k||[]).forEach(function(c){if(c==null)return;n.appendChild(typeof c==="string"?document.createTextNode(c):c);});return n;}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+  function num(v){var x=parseFloat(v);return isFinite(x)?x:NaN;}
+  function r1(x){return Math.round(x*10)/10;}
+  function strU8(s){return new TextEncoder().encode(s);}
+  function latin1(u8){var s="",CH=0x8000;for(var i=0;i<u8.length;i+=CH){s+=String.fromCharCode.apply(null,u8.subarray(i,Math.min(i+CH,u8.length)));}return s;}
+  function inflate(bytes,fmt){return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream(fmt||"deflate-raw"))).arrayBuffer().then(function(a){return new Uint8Array(a);});}
+  function downloadBlob(blob,name){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},3000);}
+
+  var CONS_LABEL={1:"Low",2:"Moderate",3:"High"};
+  function consVal(s){s=String(s||"").trim().toLowerCase();if(s[0]==="l")return 1;if(s[0]==="m")return 2;if(s[0]==="h")return 3;return 0;}
+
+  // ---------------- state ----------------
+  var state={
+    community:"", admin:"",
+    horizons:["Time Horizon 1","Time Horizon 2","Time Horizon 3"],
+    assets:[],       // {name, lat, lng, cons(1..3)}      — Community Administrator
+    transects:[],    // {lat, lng, bearing, b:[3], h:[3]}  — Consultant / Engineer
+    settings:{buffer:20}
+  };
+  var LS="path-tool-v6";  // bump this on every version so a new file never inherits example/test data saved under an older key
+  function persist(){pullInv();try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}}
+  function restore(){try{var r=localStorage.getItem(LS);if(!r)return;Object.assign(state,JSON.parse(r));if(!state.assets)state.assets=[];if(!state.transects)state.transects=[];}catch(e){}}
+
+  // ---------------- inventory table ----------------
+  function renderAssets(){
+    var head=$("asset-head"),body=$("asset-body");head.innerHTML="";body.innerHTML="";
+    head.appendChild(el("tr",{},[el("th",{class:"rownum"},["#"]),el("th",{},["Infrastructure name"]),el("th",{},["Latitude (dd)"]),el("th",{},["Longitude (dd)"]),el("th",{},["Consequence"]),el("th",{},[""])]));
+    if(!state.assets.length) body.appendChild(el("tr",{},[el("td",{colspan:"6",class:"empty",style:"padding:20px"},["No assets yet — add a row or load the example community."])]));
+    state.assets.forEach(function(as,r){
+      var tr=el("tr");
+      tr.appendChild(el("td",{class:"rownum"},[String(r+1)]));
+      tr.appendChild(el("td",{},[el("input",{type:"text",value:as.name||"",placeholder:"e.g. Health centre",oninput:function(e){as.name=e.target.value;}})]));
+      tr.appendChild(el("td",{class:"num"},[el("input",{type:"number",step:"0.0001",value:as.lat!=null?as.lat:"",placeholder:"69.4454",oninput:function(e){as.lat=e.target.value;}})]));
+      tr.appendChild(el("td",{class:"num"},[el("input",{type:"number",step:"0.0001",value:as.lng!=null?as.lng:"",placeholder:"-161.1558",oninput:function(e){as.lng=e.target.value;}})]));
+      var sel=el("select",{onchange:function(e){as.cons=consVal(e.target.value);}});
+      [["","—"],["Low","Low"],["Moderate","Moderate"],["High","High"]].forEach(function(o){var op=el("option",{value:o[0]},[o[1]]);if(consVal(o[0])===as.cons)op.selected=true;sel.appendChild(op);});
+      tr.appendChild(el("td",{},[sel]));
+      tr.appendChild(el("td",{},[el("button",{class:"delrow",title:"Remove","html":"🗑",onclick:function(){state.assets.splice(r,1);renderAssets();}})]));
+      body.appendChild(tr);
+    });
+  }
+  function hzOut(i){var v=state.horizons[i]||"";return /^time\s*horizon/i.test(v)?"":v;}   // the year value ("" if not set / still a placeholder)
+  function hzLabel(i){var y=hzOut(i);return y?y:("Time Horizon "+(i+1));}                    // just the year (e.g. "2050")
+  function pullInv(){state.community=$("f-community").value.trim();state.admin=$("f-admin").value.trim();
+    // only adopt a year the admin actually typed — never blank out horizons that came from an upload
+    ["f-h1","f-h2","f-h3"].forEach(function(id,i){var v=$(id).value.trim();if(v)state.horizons[i]=v;});}
+  function pushInv(){$("f-community").value=state.community||"";$("f-admin").value=state.admin||"";
+    $("f-h1").value=hzOut(0);$("f-h2").value=hzOut(1);$("f-h3").value=hzOut(2);}
+
+  // ================= ZIP / XLSX / DOCX WRITERS =================
+  var CRC=(function(){var t=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+  function crc32(u8){var c=0xFFFFFFFF;for(var i=0;i<u8.length;i++)c=CRC[(c^u8[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+  function zipStore(files){
+    var parts=[],offset=0,central=[];
+    function u16(v){return[v&255,(v>>8)&255];}function u32(v){return[v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255];}
+    files.forEach(function(f){var nm=strU8(f.name),cc=crc32(f.data),sz=f.data.length;
+      var loc=[].concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),u32(cc),u32(sz),u32(sz),u16(nm.length),u16(0));
+      parts.push(new Uint8Array(loc));parts.push(nm);parts.push(f.data);
+      var cen=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(cc),u32(sz),u32(sz),u16(nm.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset));
+      central.push({head:new Uint8Array(cen),name:nm});offset+=loc.length+nm.length+sz;});
+    var cdStart=offset,cd=[];central.forEach(function(c){cd.push(c.head);cd.push(c.name);offset+=c.head.length+c.name.length;});
+    var end=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(offset-cdStart),u32(cdStart),u16(0)));
+    var total=offset+end.length,out=new Uint8Array(total),p=0;parts.concat(cd,[end]).forEach(function(x){out.set(x,p);p+=x.length;});return out;
+  }
+  function colL(n){var s="";while(n>0){var m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;}
+  function xc(row,col,val){var ref=colL(col)+row;
+    if(val===""||val==null)return '<c r="'+ref+'"/>';
+    if(typeof val==="number"||/^-?\d+(\.\d+)?$/.test(String(val)))return '<c r="'+ref+'"><v>'+val+'</v></c>';
+    return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+esc(val)+'</t></is></c>';}
+  function buildXlsx(sheetName,rows,merges,cols){
+    var sd="";
+    rows.forEach(function(cells,ri){var r=ri+1;sd+='<row r="'+r+'">';cells.forEach(function(v,ci){sd+=xc(r,ci+1,v);});sd+="</row>";});
+    var mg=merges&&merges.length?'<mergeCells count="'+merges.length+'">'+merges.map(function(m){return '<mergeCell ref="'+m+'"/>';}).join("")+'</mergeCells>':"";
+    var sheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+(cols||"")+'<sheetData>'+sd+'</sheetData>'+mg+'</worksheet>';
+    var wb='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="'+esc(sheetName)+'" sheetId="1" r:id="rId1"/></sheets></workbook>';
+    var wbr='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>';
+    var ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+    var rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+    var zip=zipStore([
+      {name:"[Content_Types].xml",data:strU8(ct)},{name:"_rels/.rels",data:strU8(rels)},
+      {name:"xl/workbook.xml",data:strU8(wb)},{name:"xl/_rels/workbook.xml.rels",data:strU8(wbr)},
+      {name:"xl/worksheets/sheet1.xml",data:strU8(sheet)}
+    ]);
+    return new Blob([zip],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  }
+  function fin(v){return isFinite(num(v))?num(v):"";}
+  // Asset inventory (Community Administrator): Name / Lat / Long / Consequence + optional horizons
+  function generateInventoryXlsx(){
+    var rows=[], merges=[];
+    rows.push([ "Coastal Hazard — Asset Inventory" ]); merges.push("A1:G1");
+    rows.push([ "Community Name:", state.community||"" ]);
+    rows.push([]);
+    rows.push([ "Community Infrastructure","","","Consequence (Low/Moderate/High)","",
+      "Time Horizon 1:", hzOut(0), "Time Horizon 2:", hzOut(1), "Time Horizon 3:", hzOut(2) ]);
+    merges.push("A4:C4"); merges.push("D4:D5");
+    rows.push([ "Name","Latitude (dd)","Longitude (dd)" ]);
+    state.assets.forEach(function(as){ rows.push([ as.name||"", as.lat!=null?as.lat:"", as.lng!=null?as.lng:"", as.cons?CONS_LABEL[as.cons]:"" ]); });
+    var cols='<cols><col min="1" max="1" width="38" customWidth="1"/><col min="2" max="4" width="16" customWidth="1"/><col min="6" max="11" width="14" customWidth="1"/></cols>';
+    return buildXlsx("Inventory",rows,merges,cols);
+  }
+  // Transect sheet (Consultant / Engineer): coords, orientation, recession Baseline/High x 3 horizons
+  function generateTransectXlsx(){
+    var rows=[], merges=[];
+    rows.push([ "Coastal Hazard — Erosion Recession Input Form" ]); merges.push("A1:J1");
+    rows.push([ "Community Name:", state.community||"" ]);
+    rows.push([]);
+    rows.push([ "Transect Number","Present Day Shoreline Location","","","Time Horizon 1:", hzOut(0), "Time Horizon 2:", hzOut(1), "Time Horizon 3:", hzOut(2) ]);
+    merges.push("A4:A6"); merges.push("B4:D4"); merges.push("E5:F5"); merges.push("G5:H5"); merges.push("I5:J5");
+    rows.push([ "","Latitude (dd)","Longitude (dd)","Transect Orientation (degrees)","Shoreline Recession (m)","","Shoreline Recession (m)","","Shoreline Recession (m)","" ]);
+    merges.push("B5:B6"); merges.push("C5:C6"); merges.push("D5:D6");
+    rows.push([ "","","","","Baseline Scenario","High Erosion Scenario","Baseline Scenario","High Erosion Scenario","Baseline Scenario","High Erosion Scenario" ]);
+    var body=state.transects.slice();
+    var nBlank=Math.max(0, 10-body.length);
+    body.forEach(function(tr,i){ rows.push([ i+1, tr.lat!=null?tr.lat:"", tr.lng!=null?tr.lng:"", tr.bearing!=null?tr.bearing:"",
+      fin(tr.b[0]),fin(tr.h[0]),fin(tr.b[1]),fin(tr.h[1]),fin(tr.b[2]),fin(tr.h[2]) ]); });
+    for(var k=0;k<nBlank;k++) rows.push([ body.length+k+1, "","","","","","","","","" ]);
+    var cols='<cols><col min="1" max="1" width="15" customWidth="1"/><col min="2" max="4" width="16" customWidth="1"/><col min="5" max="10" width="15" customWidth="1"/></cols>';
+    return buildXlsx("Sheet1",rows,merges,cols);
+  }
+
+  // ----- DOCX writer (asset inventory only) -----
+  function wPara(t,o){o=o||{};var rpr=(o.b||o.sz||o.c)?("<w:rPr>"+(o.b?"<w:b/>":"")+(o.sz?"<w:sz w:val=\""+o.sz+"\"/>":"")+(o.c?"<w:color w:val=\""+o.c+"\"/>":"")+"</w:rPr>"):"";return "<w:p><w:r>"+rpr+"<w:t xml:space=\"preserve\">"+esc(t)+"</w:t></w:r></w:p>";}
+  function wCell(t,o){o=o||{};var rpr=o.b?"<w:rPr><w:b/></w:rPr>":"";var sh=o.sh?"<w:shd w:val=\"clear\" w:fill=\""+o.sh+"\"/>":"";return "<w:tc><w:tcPr><w:tcW w:w=\"0\" w:type=\"auto\"/>"+sh+"</w:tcPr><w:p><w:r>"+rpr+"<w:t xml:space=\"preserve\">"+esc(t)+"</w:t></w:r></w:p></w:tc>";}
+  function wRow(cells){return "<w:tr>"+cells.join("")+"</w:tr>";}
+  function generateInventoryDocx(){
+    var bd="<w:tblBorders>"+["top","left","bottom","right","insideH","insideV"].map(function(s){return "<w:"+s+" w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"999999\"/>";}).join("")+"</w:tblBorders>";
+    var h=wRow([wCell("Name",{b:1,sh:"EAF1F6"}),wCell("Latitude (dd)",{b:1,sh:"EAF1F6"}),wCell("Longitude (dd)",{b:1,sh:"EAF1F6"}),wCell("Consequence (Low/Moderate/High)",{b:1,sh:"EAF1F6"})]);
+    var rows=state.assets.map(function(as){return wRow([wCell(as.name||""),wCell(as.lat!=null?String(as.lat):""),wCell(as.lng!=null?String(as.lng):""),wCell(as.cons?CONS_LABEL[as.cons]:"")]);});
+    var tbl="<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/>"+bd+"</w:tblPr>"+h+rows.join("")+"</w:tbl>";
+    var body=wPara("Coastal Hazard — Asset Inventory",{b:1,sz:32,c:"103A5C"})
+      +wPara("Community Name: "+(state.community||""),{c:"5A6B7A"})
+      +wPara("Time horizons: "+hzList(),{c:"5A6B7A"})
+      +wPara("Community Administrator: list each asset with its location and the consequence if it were lost. The consultant maps shoreline recession separately on the transect sheet.",{c:"5A6B7A"})
+      +tbl;
+    var docx='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+body+'<w:sectPr><w:pgSz w:w="12240" w:h="15840"/></w:sectPr></w:body></w:document>';
+    var ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>';
+    var rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+    var zip=zipStore([{name:"[Content_Types].xml",data:strU8(ct)},{name:"_rels/.rels",data:strU8(rels)},{name:"word/document.xml",data:strU8(docx)}]);
+    return new Blob([zip],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+  }
+  function hzList(){return [hzOut(0)||"—",hzOut(1)||"—",hzOut(2)||"—"].join(", ");}
+
+  function generateInventoryPdf(){
+    var thead="<tr>"+["Name","Latitude (dd)","Longitude (dd)","Consequence (Low/Moderate/High)"].map(function(c){return "<th>"+esc(c)+"</th>";}).join("")+"</tr>";
+    var body=state.assets.map(function(as){return "<tr><td>"+esc(as.name||"")+"</td><td>"+esc(as.lat!=null?String(as.lat):"")+"</td><td>"+esc(as.lng!=null?String(as.lng):"")+"</td><td>"+(as.cons?CONS_LABEL[as.cons]:"")+"</td></tr>";}).join("");
+    printDoc("Asset Inventory","<h1>Coastal Hazard — Asset Inventory</h1><p class='sub'>Community: "+esc(state.community||"")+" &nbsp;·&nbsp; Time horizons: "+esc(hzList())+"</p><table><thead>"+thead+"</thead><tbody>"+body+"</tbody></table>");
+  }
+  function generateTransectPdf(){
+    var cols=["Transect #","Latitude (dd)","Longitude (dd)","Orientation (°)","TH1 Baseline (m)","TH1 High (m)","TH2 Baseline (m)","TH2 High (m)","TH3 Baseline (m)","TH3 High (m)"];
+    var thead="<tr>"+cols.map(function(c){return "<th>"+esc(c)+"</th>";}).join("")+"</tr>";
+    var src=state.transects.slice();
+    var n=Math.max(src.length,10),body="";
+    for(var i=0;i<n;i++){var t=src[i];
+      var cells=[t?t.lat:"",t?t.lng:"",t?t.bearing:"",t?fin(t.b[0]):"",t?fin(t.h[0]):"",t?fin(t.b[1]):"",t?fin(t.h[1]):"",t?fin(t.b[2]):"",t?fin(t.h[2]):""];
+      body+="<tr><td>"+(i+1)+"</td>"+cells.map(function(v){return "<td class='blank'>"+esc(v===""||v==null?"":String(v))+"</td>";}).join("")+"</tr>";}
+    printDoc("Transect Sheet","<h1>Coastal Hazard — Erosion Recession Input Form</h1><p class='sub'>Community: "+esc(state.community||"")+" &nbsp;·&nbsp; Time horizons: "+esc(hzList())+"<br>Consultant: for each transect give the present-day shoreline coordinates, the orientation (compass bearing the shoreline recedes toward), and the projected recession (m) — Baseline &amp; High scenarios, each horizon.</p><table><thead>"+thead+"</thead><tbody>"+body+"</tbody></table>");
+  }
+  function printDoc(title,inner){
+    var css="body{font-family:-apple-system,Segoe UI,Arial,sans-serif;color:#1d2733;font-size:11px;margin:0}.sheet{padding:16px}h1{font-size:16px;color:#103a5c;margin:0 0 4px}.sub{color:#5a6b7a;margin:0 0 10px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #b9c4cd;padding:5px 6px;text-align:left}th{background:#eef4f8;color:#103a5c;font-size:9px}td.blank{background:#fffdf5}.toolbar{position:sticky;top:0;background:#103a5c;color:#fff;padding:8px 12px;display:flex;gap:10px}.toolbar button{font:inherit;font-weight:600;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;background:#fff;color:#103a5c}@media print{.toolbar{display:none}@page{size:landscape;margin:12mm}}";
+    var html="<!DOCTYPE html><html><head><meta charset='utf-8'><title>"+esc(title)+"</title><style>"+css+"</style></head><body>"
+      +"<div class='toolbar no-print'><b>"+esc(title)+"</b><span style='flex:1'></span><button onclick='window.print()'>🖨 Save as PDF</button><button onclick='window.close()' style='background:rgba(255,255,255,.2);color:#fff'>Close</button></div>"
+      +"<div class='sheet'>"+inner+"</div></body></html>";
+    var w=window.open("","_blank");if(!w){alert("Pop-up blocked. Allow pop-ups and retry.");return;}w.document.open();w.document.write(html);w.document.close();
+  }
+
+  // ================= READERS =================
+  function csvToGrid(text){
+    var rows=[],row=[],cur="",q=false,i,c;text=String(text).replace(/\r\n?/g,"\n");
+    for(i=0;i<text.length;i++){c=text[i];
+      if(q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+      else { if(c==='"')q=true; else if(c===','){row.push(cur);cur="";} else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur="";} else cur+=c; }
+    }
+    if(cur!==""||row.length){row.push(cur);rows.push(row);}
+    return rows.map(function(r){return r.map(function(x){return String(x).trim();});});
+  }
+  function docxToGrid(ab){
+    return unzipEntry(ab,"word/document.xml").then(function(xml){
+      var text=xml.replace(/<w:tab\/>/g," ").replace(/<w:br\s*\/?>/g," ").replace(/<\/w:p>/g,"\n").replace(/<\/w:tr>/g,"").replace(/<\/w:tc>/g,"").replace(/<[^>]+>/g,"")
+        .replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#(\d+);/g,function(_,d){return String.fromCharCode(+d);});
+      var grid=[];
+      text.split("").forEach(function(rowtext){
+        if(rowtext.indexOf("")<0) return;
+        var cells=rowtext.split("").map(function(c){return c.replace(/\n/g," ").trim();});
+        while(cells.length&&cells[cells.length-1]==="")cells.pop();
+        if(cells.length) grid.push(cells);
+      });
+      return grid;
+    });
+  }
+  function unzipEntry(ab,entryName){
+    var u8=new Uint8Array(ab),dv=new DataView(ab);
+    var eocd=-1,lim=Math.max(0,u8.length-22-65557);
+    for(var i=u8.length-22;i>=lim;i--){if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}}
+    if(eocd<0)return Promise.reject(new Error("Not a valid Office file (zip)."));
+    var cdOff=dv.getUint32(eocd+16,true),count=dv.getUint16(eocd+10,true),p=cdOff,target=null;
+    for(var n=0;n<count;n++){if(dv.getUint32(p,true)!==0x02014b50)break;
+      var method=dv.getUint16(p+10,true),comp=dv.getUint32(p+20,true),nameLen=dv.getUint16(p+28,true),ex=dv.getUint16(p+30,true),cm=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+      var name=latin1(u8.subarray(p+46,p+46+nameLen));
+      if(name===entryName)target={method:method,comp:comp,lo:lo};
+      p+=46+nameLen+ex+cm;}
+    if(!target)return Promise.reject(new Error("Missing "+entryName+" in file."));
+    var lnn=dv.getUint16(target.lo+26,true),lne=dv.getUint16(target.lo+28,true),ds=target.lo+30+lnn+lne;
+    var raw=u8.subarray(ds,ds+target.comp);
+    var dec=function(d){return new TextDecoder("utf-8").decode(d);};
+    if(target.method===0)return Promise.resolve(dec(raw));
+    return inflate(raw,"deflate-raw").then(dec);
+  }
+  function xlsxToGrid(ab){
+    return unzipEntry(ab,"xl/sharedStrings.xml").then(function(x){return x;},function(){return null;}).then(function(ssXml){
+      var shared=[];
+      if(ssXml){ (ssXml.match(/<si>[\s\S]*?<\/si>/g)||[]).forEach(function(si){ var t=(si.match(/<t[^>]*>([\s\S]*?)<\/t>/g)||[]).map(function(m){return m.replace(/<[^>]*>/g,"");}).join(""); shared.push(decodeXml(t)); }); }
+      return unzipEntry(ab,"xl/worksheets/sheet1.xml").then(function(sheet){
+        var grid=[];
+        (sheet.match(/<row[^>]*>[\s\S]*?<\/row>/g)||[]).forEach(function(rowXml){
+          var rm=rowXml.match(/<row[^>]*r="(\d+)"/); var rIdx=rm?+rm[1]:grid.length+1;
+          var cells=[];
+          (rowXml.match(/<c\b[^>]*?(?:\/>|>[\s\S]*?<\/c>)/g)||[]).forEach(function(cXml){
+            var ref=(cXml.match(/r="([A-Z]+)\d+"/)||[])[1]; var col=ref?colNum(ref):cells.length+1;
+            var t=(cXml.match(/t="([^"]+)"/)||[])[1]; var val="";
+            if(t==="inlineStr"){ val=decodeXml((cXml.match(/<t[^>]*>([\s\S]*?)<\/t>/)||[])[1]||""); }
+            else{ var v=(cXml.match(/<v>([\s\S]*?)<\/v>/)||[])[1]; if(v!=null){ val = t==="s" ? (shared[+v]||"") : decodeXml(v); } }
+            cells[col-1]=String(val).trim();
+          });
+          for(var k=0;k<cells.length;k++)if(cells[k]==null)cells[k]="";
+          grid[rIdx-1]=cells;
+        });
+        for(var g=0;g<grid.length;g++)if(!grid[g])grid[g]=[];
+        return grid;
+      });
+    });
+  }
+  function colNum(letters){var n=0;for(var i=0;i<letters.length;i++)n=n*26+(letters.charCodeAt(i)-64);return n;}
+  function decodeXml(s){return String(s==null?"":s).replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,function(_,d){return String.fromCharCode(+d);}).replace(/&amp;/g,"&");}
+  function nonEmpty(grid){return grid.filter(function(r){return r&&r.some(function(c){return String(c).trim()!=="";});});}
+  function hasNumber(row){return row.some(function(c){return /^-?\d+(\.\d+)?$/.test(String(c).trim());});}
+  function scanCommunity(grid){
+    var c=""; grid.forEach(function(row){ row.forEach(function(cell,ci){ if(/community\s*name/i.test(String(cell))){ var v=String(row[ci+1]||"").trim(); if(v&&!/community\s*name/i.test(v))c=v; } }); }); return c;
+  }
+  function scanHorizons(grid){
+    var hz=[null,null,null];
+    grid.forEach(function(row){ row.forEach(function(cell,ci){
+      var m=String(cell).match(/time\s*horizon\s*([123])\s*:/i);
+      if(m && !/recession|\(m\)|scenario/i.test(String(cell))){
+        var v=String(row[ci+1]||"").replace(/^[:=\s]+/,"").trim();
+        if(v && v.length<=20 && !/recession|\(m\)/i.test(v)) hz[+m[1]-1]=v;
+      }
+    }); });
+    return hz;
+  }
+
+  // Parse the Community Administrator inventory → assets + horizons
+  function parseInventory(grid){
+    grid=nonEmpty(grid);
+    var hz=scanHorizons(grid);
+    var hi=-1;
+    for(var i=0;i<grid.length;i++){var L=grid[i].join(" | ").toLowerCase(); if(/(infrastructure|asset|\bname\b)/.test(L)&&/lat/.test(L)){hi=i;break;}}
+    if(hi<0) return {ok:false,reason:"Couldn’t find the inventory header row (needs Name and Latitude)."};
+    var header=grid[hi].map(function(c){return String(c).toLowerCase();});
+    var idx={name:-1,lat:-1,lng:-1,cons:-1};
+    header.forEach(function(h,ci){
+      if(idx.name<0&&/(infrastructure|asset|name)/.test(h)&&!/lat|long|community/.test(h))idx.name=ci;
+      if(idx.lat<0&&/lat/.test(h))idx.lat=ci;
+      if(idx.lng<0&&/(long|lon\b|lng)/.test(h))idx.lng=ci;
+    });
+    // consequence may sit in the group-header row above (merged), which can be wider than the
+    // sub-header row — scan both rows across their full lengths, not just the header columns
+    [grid[hi],grid[hi-1]||[]].forEach(function(hr){ hr.forEach(function(cell,ci){ if(idx.cons<0&&/consequence/.test(String(cell).toLowerCase()))idx.cons=ci; }); });
+    if(idx.name<0||idx.lat<0||idx.lng<0) return {ok:false,reason:"Inventory header is missing Name / Latitude / Longitude."};
+    var assets=[];
+    for(var r=hi+1;r<grid.length;r++){
+      var row=grid[r]; if(!row) continue;
+      var rowStr=row.join(" ").toLowerCase();
+      if(/baseline|high\s*\(m\)|high erosion|scenario|recession/.test(rowStr)&&!hasNumber(row)) continue;
+      var name=String(row[idx.name]||"").trim(); if(!name) continue;
+      var lat=num(row[idx.lat]), lng=num(row[idx.lng]);
+      assets.push({name:name, lat:isFinite(lat)?lat:"", lng:isFinite(lng)?lng:"", cons:idx.cons>=0?consVal(row[idx.cons]):0});
+    }
+    if(!assets.length) return {ok:false,reason:"No asset rows found under the header."};
+    return {ok:true, assets:assets, horizons:hz, community:scanCommunity(grid)};
+  }
+
+  // Parse the Consultant transect sheet → transects + horizons
+  function parseTransects(grid){
+    grid=nonEmpty(grid);
+    var hz=scanHorizons(grid);
+    var hi=-1;
+    for(var i=0;i<grid.length;i++){var L=grid[i].join(" | ").toLowerCase(); if(/orient|bearing|azimuth/.test(L)&&/lat/.test(L)){hi=i;break;}}
+    if(hi<0){ for(var j=0;j<grid.length;j++){var L2=grid[j].join(" | ").toLowerCase(); if(/recession/.test(L2)&&/lat/.test(L2)){hi=j;break;}} }
+    if(hi<0) return {ok:false,reason:"Couldn’t find the transect header row (needs Latitude and Orientation/Recession)."};
+    var header=grid[hi].map(function(c){return String(c).toLowerCase();});
+    var idx={lat:-1,lng:-1,brg:-1};
+    header.forEach(function(h,ci){
+      if(idx.lat<0&&/lat/.test(h))idx.lat=ci;
+      if(idx.lng<0&&/(long|lon\b|lng)/.test(h))idx.lng=ci;
+      if(idx.brg<0&&/(orient|bearing|azimuth|degree)/.test(h))idx.brg=ci;
+    });
+    if(idx.lat<0||idx.lng<0) return {ok:false,reason:"Transect header is missing Latitude / Longitude."};
+    var recStart=(idx.brg>=0?idx.brg:Math.max(idx.lat,idx.lng))+1;
+    // Baseline-first unless the scenario-label row says otherwise
+    var baseFirst=true;
+    var lab=grid[hi+1]||[];
+    if(/high/i.test(String(lab[recStart]||""))&&/base/i.test(String(lab[recStart+1]||""))) baseFirst=false;
+    var transects=[];
+    for(var r=hi+1;r<grid.length;r++){
+      var row=grid[r]; if(!row) continue;
+      var lat=num(row[idx.lat]), lng=num(row[idx.lng]);
+      if(!isFinite(lat)||!isFinite(lng)) continue;   // skips the "Baseline/High Scenario" label row too
+      var brg=idx.brg>=0?num(row[idx.brg]):NaN;
+      var rec=[]; for(var c=0;c<6;c++) rec.push(num(row[recStart+c]));
+      var b=[rec[0],rec[2],rec[4]], h=[rec[1],rec[3],rec[5]];
+      if(!baseFirst){ b=[rec[1],rec[3],rec[5]]; h=[rec[0],rec[2],rec[4]]; }
+      transects.push({lat:lat, lng:lng, bearing:isFinite(brg)?brg:"", b:b, h:h});
+    }
+    if(!transects.length) return {ok:false,reason:"No transect rows found under the header."};
+    return {ok:true, transects:transects, horizons:hz, community:scanCommunity(grid)};
+  }
+
+  // ================= GEOMETRY + RISK =================
+  // Shoreline = the polyline through the transect points. The receded shoreline for a
+  // (scenario, horizon) is those points moved inland along each transect's bearing by the
+  // projected recession. An asset is exposed when it falls inside the eroded envelope, i.e.
+  // it is on the sea side of (or on) the receded shoreline at its along-shore position.
+  function mkInterp(knots){
+    var k=knots.filter(function(p){return isFinite(p[0])&&isFinite(p[1]);}).slice().sort(function(u,v){return u[0]-v[0];});
+    return function(a){
+      if(!k.length) return NaN;
+      if(a<=k[0][0]) return k[0][1];
+      if(a>=k[k.length-1][0]) return k[k.length-1][1];
+      for(var i=1;i<k.length;i++){ if(a<=k[i][0]){ var f=(a-k[i-1][0])/((k[i][0]-k[i-1][0])||1); return k[i-1][1]+f*(k[i][1]-k[i-1][1]); } }
+      return k[k.length-1][1];
+    };
+  }
+  function buildGeo(){
+    var A=state.assets.filter(function(a){return isFinite(num(a.lat))&&isFinite(num(a.lng));});
+    var T=state.transects.filter(function(t){return isFinite(num(t.lat))&&isFinite(num(t.lng));});
+    if(!A.length && !T.length) return null;
+    var all=A.concat(T);
+    var lat0=all.reduce(function(sm,p){return sm+num(p.lat);},0)/all.length;
+    var lon0=all.reduce(function(sm,p){return sm+num(p.lng);},0)/all.length;
+    var mlon=111320*Math.cos(lat0*Math.PI/180), mlat=110540;
+    function XY(p){ return [ (num(p.lng)-lon0)*mlon, (num(p.lat)-lat0)*mlat ]; }
+    var trs=T.map(function(t){ var xy=XY(t); return {lat:num(t.lat),lng:num(t.lng),x:xy[0],y:xy[1],bearing:num(t.bearing),b:t.b,h:t.h}; });
+    // mean landward (recession) unit vector → sea/along frame
+    var meanL=[0,0], nb=0;
+    trs.forEach(function(t){ if(isFinite(t.bearing)){ var th=t.bearing*Math.PI/180; meanL[0]+=Math.sin(th); meanL[1]+=Math.cos(th); nb++; } });
+    var sea;
+    if(nb){ var ml=Math.hypot(meanL[0],meanL[1])||1; sea=[-meanL[0]/ml,-meanL[1]/ml]; }
+    else { sea=[0,-1]; }                                   // no bearings → assume sea to the south
+    var along=[-sea[1],sea[0]];
+    if(along[0]<-1e-9 || (Math.abs(along[0])<1e-9 && along[1]<0)) along=[-along[0],-along[1]];  // keep east ~rightward
+    var Lmean=[-sea[0],-sea[1]];
+    trs.forEach(function(t){ if(isFinite(t.bearing)){ var th=t.bearing*Math.PI/180; t.L=[Math.sin(th),Math.cos(th)]; } else t.L=Lmean; });
+    function proj(x,y){ return { a:x*along[0]+y*along[1], c:x*sea[0]+y*sea[1] }; }
+    var pts=A.map(function(a,i){ var xy=XY(a); var pc=proj(xy[0],xy[1]); return {i:i,name:a.name,cons:a.cons,x:xy[0],y:xy[1],a:pc.a,c:pc.c}; });
+    trs.forEach(function(t){ var pc=proj(t.x,t.y); t.ta=pc.a; t.tc=pc.c; t.rec={b:[],h:[]};
+      ["b","h"].forEach(function(s){ for(var k=0;k<3;k++){ var d=num(t[s][k]); if(!isFinite(d))d=0; var rp=proj(t.x+d*t.L[0], t.y+d*t.L[1]); t.rec[s].push([rp.a,rp.c]); } }); });
+    var shoreKnots=trs.map(function(t){return [t.ta,t.tc];});
+    var recKnots={b:[[],[],[]],h:[[],[],[]]};
+    trs.forEach(function(t){ ["b","h"].forEach(function(s){ for(var k=0;k<3;k++) recKnots[s][k].push(t.rec[s][k]); }); });
+    var csAt=mkInterp(shoreKnots);
+    var rcI={b:recKnots.b.map(mkInterp), h:recKnots.h.map(mkInterp)};
+    var geo={
+      pts:pts, transects:trs, sea:sea, along:along, buffer:num(state.settings.buffer)||0,
+      hasTransects:trs.length>0, hasAssets:pts.length>0,
+      shoreKnots:shoreKnots, recKnots:recKnots, csAt:csAt,
+      rcAt:function(s,t,a){ return rcI[s][t](a); },
+      dropped:state.assets.length-A.length
+    };
+    pts.forEach(function(p){ var cs=csAt(p.a); p.D=isFinite(cs)?Math.max(0,cs-p.c):NaN; });
+    return geo;
+  }
+  // likelihood 0..3 at horizon t (0 index)
+  function likelihood(geo,p,t){
+    if(!geo.hasTransects) return 0;
+    var rcB=geo.rcAt("b",t,p.a), rcH=geo.rcAt("h",t,p.a);
+    if(isFinite(rcB)&&p.c>=rcB) return 3;         // reached even under the Baseline erosion
+    if(isFinite(rcH)&&p.c>=rcH) return 2;         // reached only under the High scenario
+    if(isFinite(rcH)&&p.c>=rcH-geo.buffer) return 1;  // within the buffer beyond the High envelope
+    return 0;
+  }
+  function reached(geo,p,s,t){ var rc=geo.rcAt(s,t,p.a); return isFinite(rc) && p.c>=rc; }
+  function riskScore(L,cons){ return L>0&&cons>0 ? L*cons : 0; }
+  function riskBand(score){ return score>=6?"High":score>=3?"Moderate":score>=1?"Low":"Not at Risk"; }
+  // Likelihood × Consequence only ever lands on 1,2,3,4,6,9 — a clean 6-step green→yellow→orange→red ramp
+  function scoreColor(score){ if(score<=0) return "#e7edf2"; var map={1:"#2e8b57",2:"#8bc34a",3:"#ffd54a",4:"#f6a623",6:"#ee6c2c",9:"#c0392b"}; return map[score]||"#f6a623"; }
+  function consColor(cons){ return cons===3?"#c0392b":cons===2?"#e0a000":cons===1?"#2e8b57":"#8a97a3"; }   // asset dot colour = consequence
+
+  // ================= SVG PACKAGE — every result is a full A0-landscape page =================
+  var PGW=1600, PGH=1131;                      // A0 landscape aspect (1.414)
+  var ENV={ high:{fill:"rgba(192,57,43,0.42)", line:"#c0392b"},
+            mod:{fill:"rgba(224,138,0,0.40)",  line:"#e0a000"},
+            low:{fill:"rgba(38,139,71,0.34)",  line:"#1a7a3c"} };
+  var SHORE="#2f7fb3", LANDCOL="#f3ede1", SEACOL="#cfe6f4", DEEP="#103a5c", MUT="#5a6b7a", LINEC="#cdd8e1";
+  function f1(n){ return Math.round(n*10)/10; }
+  function poly(P){ return P.map(function(p){return f1(p[0])+","+f1(p[1]);}).join(" "); }
+  function T(x,y,str,o){ o=o||{};
+    var at='x="'+f1(x)+'" y="'+f1(y)+'" font-size="'+(o.size||20)+'" fill="'+(o.fill||"#1d2733")+'" font-weight="'+(o.weight||400)+'" text-anchor="'+(o.anchor||"start")+'"';
+    if(o.halo) at+=' stroke="#ffffff" stroke-width="'+o.halo+'" paint-order="stroke"';
+    return '<text '+at+'>'+esc(str)+'</text>';
+  }
+  function Trot(x,y,deg,str,o){ return '<g transform="translate('+f1(x)+','+f1(y)+') rotate('+deg+')">'+T(0,0,str,o)+'</g>'; }
+  function pageBox(){ return '<svg viewBox="0 0 '+PGW+' '+PGH+'" xmlns="http://www.w3.org/2000/svg" font-family="Arial"><rect x="0" y="0" width="'+PGW+'" height="'+PGH+'" fill="#ffffff"/>'; }
+  function pageTitle(title){ // big title band, no subtitle
+    return T(70, 78, title, {size:52, weight:800, fill:DEEP}) + '<line x1="70" y1="104" x2="'+(PGW-70)+'" y2="104" stroke="'+LINEC+'" stroke-width="2"/>';
+  }
+
+  // smooth curve through knots, evaluatable at any a (Hermite; linear just outside the range)
+  function mkSmooth(knots){
+    var k=knots.filter(function(p){return isFinite(p[0])&&isFinite(p[1]);}).slice().sort(function(u,v){return u[0]-v[0];});
+    var merged=[]; k.forEach(function(p){ var g=merged[merged.length-1];
+      if(g&&Math.abs(p[0]-g.a)<1e-6){ g.n++; g.cs+=p[1]; } else merged.push({a:p[0],cs:p[1],n:1}); });
+    var ka=merged.map(function(m){return m.a;}), cs=merged.map(function(m){return m.cs/m.n;}), n=ka.length;
+    var m=[]; for(var i=0;i<n;i++){ m[i]=(i===0)?(n>1?(cs[1]-cs[0])/((ka[1]-ka[0])||1):0):(i===n-1)?(cs[n-1]-cs[n-2])/((ka[n-1]-ka[n-2])||1):(cs[i+1]-cs[i-1])/((ka[i+1]-ka[i-1])||1); }
+    return function(a){
+      if(n===0) return NaN;
+      if(a<=ka[0]) return cs[0]+m[0]*(a-ka[0]);
+      if(a>=ka[n-1]) return cs[n-1]+m[n-1]*(a-ka[n-1]);
+      for(var j=1;j<n;j++){ if(a<=ka[j]){ var h=ka[j]-ka[j-1], u=(a-ka[j-1])/h, u2=u*u, u3=u2*u;
+        var h00=2*u3-3*u2+1,h10=u3-2*u2+u,h01=-2*u3+3*u2,h11=u3-u2;
+        return h00*cs[j-1]+h10*h*m[j-1]+h01*cs[j]+h11*h*m[j]; } }
+      return cs[n-1];
+    };
+  }
+  function niceStep(range, target){ if(!(range>0))return 1; var raw=range/target, pow=Math.pow(10,Math.floor(Math.log10(raw))), fr=raw/pow; var nf=fr<1.5?1:fr<3?2:fr<7?5:10; return nf*pow; }
+
+  // ---- LEGEND (envelopes + lines; no "Sea") ----
+  function legendSvg(items, x, y, w){
+    var s=[]; s.push(T(x, y, "LEGEND", {size:23, weight:700, fill:DEEP}));
+    var iy=y+34;
+    items.forEach(function(it){
+      if(it.t==="fill"){
+        s.push('<rect x="'+x+'" y="'+(iy-19)+'" width="34" height="24" rx="4" fill="'+it.color+'" stroke="rgba(0,0,0,0.25)"/>');
+      } else {
+        s.push('<line x1="'+x+'" y1="'+(iy-7)+'" x2="'+(x+34)+'" y2="'+(iy-7)+'" stroke="'+it.color+'" stroke-width="4"'+(it.dash?' stroke-dasharray="10 7"':'')+'/>');
+      }
+      // wrap long labels
+      var words=String(it.label).split(" "), lines=[], cur="";
+      words.forEach(function(wd){ var test=cur?cur+" "+wd:wd; if(test.length>30&&cur){ lines.push(cur); cur=wd; } else cur=test; });
+      if(cur) lines.push(cur);
+      lines.forEach(function(ln,li){ s.push(T(x+46, iy+li*22, ln, {size:19, fill:"#22303b"})); });
+      iy += Math.max(30, lines.length*22+10);
+    });
+    return {svg:s.join(""), bottom:iy};
+  }
+  // ---- ASSET LIST (vertical, numbered) ----
+  function assetListSvg(geo, x, y, w, title, dotColorFn){
+    // dotColorFn lets a caller override the marker colour (e.g. the risk matrix pages, where
+    // Consequence is already the grid's x-axis, so the legend dot stays a plain dark blue
+    // rather than repeating the consequence colour used on the maps).
+    dotColorFn=dotColorFn||function(p){return consColor(p.cons);};
+    var s=[]; if(title!==false) s.push(T(x, y, "Asset (Consequence)", {size:23, weight:700, fill:DEEP}));
+    var startY=(title!==false)?y+34:y+6, n=geo.pts.length;
+    var rowH=Math.max(20, Math.min(30, (PGH-70-startY)/Math.max(1,n)));
+    var fs=rowH>=26?18:(rowH>=22?16:14), rr=Math.min(13, rowH*0.42);
+    geo.pts.forEach(function(p,idx){ var yy=startY+idx*rowH;
+      s.push('<circle cx="'+(x+rr)+'" cy="'+(yy-rr*0.5)+'" r="'+rr+'" fill="'+dotColorFn(p)+'"/>');
+      s.push(T(x+rr, yy-rr*0.5+fs*0.34, String(p.i+1), {size:fs*0.8, weight:700, fill:"#fff", anchor:"middle"}));
+      var nm=(p.name||"(unnamed)"); if(nm.length>34) nm=nm.slice(0,33)+"…";
+      nm=nm+(p.cons?" ("+CONS_LABEL[p.cons]+")":"");
+      s.push(T(x+rr*2+8, yy-rr*0.5+fs*0.34, nm, {size:fs, fill:"#22303b"}));
+    });
+    return s.join("");
+  }
+
+  // ---- MAP PAGE ----
+  function drawMapPage(geo, shoreKnots, bands, legend, title){
+    var s=[pageBox(), pageTitle(title)];
+    var panelW=440, plotX0=95, plotX1=PGW-panelW-40, plotY0=150, plotY1=PGH-96;
+    // along-shore extent = transect range only (cut just outside the last transect)
+    var tas=geo.transects.map(function(t){return t.ta;});
+    var aMin=Math.min.apply(null,tas), aMax=Math.max.apply(null,tas);
+    var aPad=(aMax-aMin)*0.012; aMin-=aPad; aMax+=aPad;
+    var cMin=Infinity,cMax=-Infinity;
+    function accC(c){ if(isFinite(c)){cMin=Math.min(cMin,c);cMax=Math.max(cMax,c);} }
+    var allKnots=shoreKnots.slice(); bands.forEach(function(b){ allKnots=allKnots.concat(b.knots); });
+    allKnots.forEach(function(k){ if(k[0]>=aMin-1&&k[0]<=aMax+1) accC(k[1]); });
+    geo.pts.forEach(function(p){ if(p.a>=aMin&&p.a<=aMax) accC(p.c); });
+    if(!isFinite(cMin)){ cMin=-50; cMax=50; }
+    var cPad=(cMax-cMin)*0.06+3; cMin-=cPad; cMax+=cPad;
+    var sx=(plotX1-plotX0)/((aMax-aMin)||1), sy=(plotY1-plotY0)/((cMax-cMin)||1);
+    function X(a){ return plotX0+(a-aMin)*sx; }
+    function Y(c){ return plotY0+(c-cMin)*sy; }
+    var N=280, gridA=[]; for(var i=0;i<=N;i++) gridA.push(aMin+(aMax-aMin)*i/N);
+    function screenLine(knots){ var fn=mkSmooth(knots); return gridA.map(function(a){ return [X(a),Y(fn(a))]; }); }
+    // land background + sea
+    s.push('<rect x="'+plotX0+'" y="'+plotY0+'" width="'+(plotX1-plotX0)+'" height="'+(plotY1-plotY0)+'" fill="'+LANDCOL+'"/>');
+    var shoreLine=screenLine(shoreKnots);
+    s.push('<polygon points="'+poly(shoreLine.concat([[plotX1,plotY1],[plotX0,plotY1]]))+'" fill="'+SEACOL+'"/>');
+    var prev=shoreLine;
+    bands.forEach(function(bd){ var line=screenLine(bd.knots);
+      s.push('<polygon points="'+poly(prev.concat(line.slice().reverse()))+'" fill="'+bd.fill+'"/>');
+      s.push('<polyline points="'+poly(line)+'" fill="none" stroke="'+bd.line+'" stroke-width="3"'+(bd.dash?' stroke-dasharray="12 8"':'')+'/>');
+      prev=line;
+    });
+    s.push('<polyline points="'+poly(shoreLine)+'" fill="none" stroke="'+SHORE+'" stroke-width="4"/>');
+    // axes (metres) — origin (0,0) at the bottom-left corner, clean round increments up/right
+    var stepX=niceStep(aMax-aMin,8), stepY=niceStep(cMax-cMin,8);
+    s.push('<rect x="'+plotX0+'" y="'+plotY0+'" width="'+(plotX1-plotX0)+'" height="'+(plotY1-plotY0)+'" fill="none" stroke="'+DEEP+'" stroke-width="1.5"/>');
+    for(var kx=0; aMin+kx*stepX<=aMax+1e-6; kx++){ var px=X(aMin+kx*stepX); if(px>plotX1+1)break;
+      s.push('<line x1="'+f1(px)+'" y1="'+plotY1+'" x2="'+f1(px)+'" y2="'+(plotY1+9)+'" stroke="'+DEEP+'" stroke-width="1.5"/>');
+      s.push(T(px, plotY1+30, String(Math.round(kx*stepX)), {size:16, fill:MUT, anchor:"middle"}));
+      if(kx>0) s.push('<line x1="'+f1(px)+'" y1="'+plotY0+'" x2="'+f1(px)+'" y2="'+plotY1+'" stroke="#000000" stroke-width="0.5" opacity="0.06"/>');
+    }
+    for(var ky=0; cMax-ky*stepY>=cMin-1e-6; ky++){ var py=Y(cMax-ky*stepY); if(py<plotY0-1)break;
+      s.push('<line x1="'+(plotX0-9)+'" y1="'+f1(py)+'" x2="'+plotX0+'" y2="'+f1(py)+'" stroke="'+DEEP+'" stroke-width="1.5"/>');
+      s.push(T(plotX0-14, py+5, String(Math.round(ky*stepY)), {size:16, fill:MUT, anchor:"end"}));
+      if(ky>0) s.push('<line x1="'+plotX0+'" y1="'+f1(py)+'" x2="'+plotX1+'" y2="'+f1(py)+'" stroke="#000000" stroke-width="0.5" opacity="0.06"/>');
+    }
+    s.push(T((plotX0+plotX1)/2, plotY1+62, "Along-shore distance (m)", {size:19, weight:700, fill:DEEP, anchor:"middle"}));
+    s.push(Trot(plotX0-58, (plotY0+plotY1)/2, -90, "Cross-shore distance (m)", {size:19, weight:700, fill:DEEP, anchor:"middle"}));
+    // LAND / SEA
+    s.push(T((plotX0+plotX1)/2, plotY0+34, "LAND", {size:26, weight:700, fill:"#8a6d3b", anchor:"middle", halo:5}));
+    s.push(T((plotX0+plotX1)/2, plotY1-18, "SEA", {size:26, weight:700, fill:"#1d5b86", anchor:"middle", halo:5}));
+    // north arrow
+    var nAx=geo.along[1]*sx, nCy=geo.sea[1]*sy, nm=Math.hypot(nAx,nCy)||1, thDeg=Math.atan2(nAx/nm,-nCy/nm)*180/Math.PI;
+    var nx=plotX1-46, ny=plotY0+46;
+    s.push('<circle cx="'+nx+'" cy="'+ny+'" r="26" fill="#ffffff" stroke="'+LINEC+'" stroke-width="1.6"/>');
+    s.push('<g transform="translate('+nx+','+ny+') rotate('+f1(thDeg)+')"><polygon points="0,-15 8,11 0,5 -8,11" fill="'+DEEP+'"/></g>');
+    s.push(T(nx, ny-32, "N", {size:18, weight:700, fill:DEEP, anchor:"middle"}));
+    // asset markers (only those inside the transect span) with collision nudge
+    var R=15, nodes=geo.pts.filter(function(p){return p.a>=aMin&&p.a<=aMax;}).map(function(p){ return {p:p,x0:X(p.a),y0:Y(p.c),x:X(p.a),y:Y(p.c)}; });
+    for(var it=0;it<100;it++){ var moved=false;
+      for(var iA=0;iA<nodes.length;iA++)for(var iB=iA+1;iB<nodes.length;iB++){ var nA=nodes[iA],nB=nodes[iB],dx=nB.x-nA.x,dy=nB.y-nA.y,d=Math.hypot(dx,dy),minD=2*R+5;
+        if(d<minD){ if(d<0.01){dx=1;dy=0;d=1;} var pu=(minD-d)/2/d; nA.x-=dx*pu;nA.y-=dy*pu;nB.x+=dx*pu;nB.y+=dy*pu; moved=true; } }
+      nodes.forEach(function(nd){ nd.x=Math.max(plotX0+R+2,Math.min(plotX1-R-2,nd.x)); nd.y=Math.max(plotY0+R+2,Math.min(plotY1-R-2,nd.y)); });
+      if(!moved)break;
+    }
+    nodes.forEach(function(nd){
+      if(Math.hypot(nd.x-nd.x0,nd.y-nd.y0)>5){ s.push('<line x1="'+f1(nd.x0)+'" y1="'+f1(nd.y0)+'" x2="'+f1(nd.x)+'" y2="'+f1(nd.y)+'" stroke="'+DEEP+'" stroke-width="1.2" opacity="0.5"/>'); s.push('<circle cx="'+f1(nd.x0)+'" cy="'+f1(nd.y0)+'" r="3.5" fill="'+DEEP+'"/>'); }
+      s.push('<circle cx="'+f1(nd.x)+'" cy="'+f1(nd.y)+'" r="'+R+'" fill="'+consColor(nd.p.cons)+'" stroke="#fff" stroke-width="2.5"/>');
+      s.push(T(nd.x, nd.y+5.5, String(nd.p.i+1), {size:17, weight:700, fill:"#fff", anchor:"middle"}));
+    });
+    // right panel: legend + asset list
+    var px=plotX1+40;
+    var leg=legendSvg(legend, px, plotY0+14, panelW);
+    s.push(leg.svg);
+    s.push(assetListSvg(geo, px, leg.bottom+24, panelW, true));
+    s.push('</svg>');
+    return s.join("");
+  }
+
+  // ---- RISK MATRIX PAGE ----
+  // A short, thick arrow drawn as geometry (not a "->" glyph). dir: "right" or "up".
+  function cleanArrow(cx,cy,len,dir,color){
+    var hw=9, hl=16;
+    if(dir==="right"){
+      var x0=cx-len/2, x1=cx+len/2-hl;
+      return '<line x1="'+f1(x0)+'" y1="'+f1(cy)+'" x2="'+f1(x1)+'" y2="'+f1(cy)+'" stroke="'+color+'" stroke-width="6" stroke-linecap="round"/>'
+        +'<polygon points="'+f1(x1+hl)+','+f1(cy)+' '+f1(x1)+','+f1(cy-hw)+' '+f1(x1)+','+f1(cy+hw)+'" fill="'+color+'"/>';
+    } else {
+      var y0=cy+len/2, y1=cy-len/2+hl;
+      return '<line x1="'+f1(cx)+'" y1="'+f1(y0)+'" x2="'+f1(cx)+'" y2="'+f1(y1)+'" stroke="'+color+'" stroke-width="6" stroke-linecap="round"/>'
+        +'<polygon points="'+f1(cx)+','+f1(y1-hl)+' '+f1(cx-hw)+','+f1(y1)+' '+f1(cx+hw)+','+f1(y1)+'" fill="'+color+'"/>';
+    }
+  }
+  function drawMatrixPage(geo, t, title){
+    var s=[pageBox(), pageTitle(title)];
+    s.push(T(70, 142, "Risk score = Likelihood × Consequence (1–9). Risk is highest in the top-right of the grid and lowest in the bottom-left.", {size:24, fill:"#22303b"}));
+    var gx0=140, gy0=225, cell=235, gsz=3*cell;                 // big grid on the left
+    for(var cy=0;cy<3;cy++)for(var cx=0;cx<3;cx++){ var Lk=3-cy, Cq=cx+1, sc=Lk*Cq, x=gx0+cx*cell, y=gy0+cy*cell;
+      s.push('<rect x="'+x+'" y="'+y+'" width="'+cell+'" height="'+cell+'" fill="'+scoreColor(sc)+'" fill-opacity="0.78" stroke="#fff" stroke-width="4"/>');
+      s.push(T(x+cell-16, y+42, String(sc), {size:38, weight:800, fill:"#22303b", anchor:"end"}));
+    }
+    var cells={}, excluded=[];
+    geo.pts.forEach(function(p){ var Lk=likelihood(geo,p,t); if(Lk<=0||!p.cons){ excluded.push(p); return; } var key=p.cons+"_"+Lk; (cells[key]=cells[key]||[]).push(p); });
+    Object.keys(cells).forEach(function(key){ var pr=key.split("_"), Cq=+pr[0], Lk=+pr[1], list=cells[key];
+      var cx=Cq-1, cy=3-Lk, bx=gx0+cx*cell, by=gy0+cy*cell, nn=list.length, perRow=Math.ceil(Math.sqrt(nn)), nRows=Math.ceil(nn/perRow);
+      var stepx=cell/(perRow+1), stepy=cell/(nRows+1), r=Math.max(11,Math.min(20,stepx/2-4,stepy/2-4)), fs=r>=15?18:14;
+      list.forEach(function(p,k){ var col=k%perRow, rw=Math.floor(k/perRow), pxc=bx+stepx*(col+1), pyc=by+stepy*(rw+1)+8;
+        s.push('<circle cx="'+f1(pxc)+'" cy="'+f1(pyc)+'" r="'+f1(r)+'" fill="'+DEEP+'" stroke="#fff" stroke-width="2"/>');
+        s.push(T(pxc, pyc+fs*0.34, String(p.i+1), {size:fs, weight:700, fill:"#fff", anchor:"middle"})); });
+    });
+    ["Low (1)","Moderate (2)","High (3)"].forEach(function(lb,k){ s.push(T(gx0+(k+0.5)*cell, gy0+gsz+30, lb, {size:22, weight:700, fill:MUT, anchor:"middle"})); });
+    ["Low (1)","Moderate (2)","High (3)"].forEach(function(lb,k){ s.push(Trot(gx0-28, gy0+(2.5-k)*cell, -90, lb, {size:22, weight:700, fill:MUT, anchor:"middle"})); });
+    s.push(T(gx0+gsz/2, gy0+gsz+66, "Consequence", {size:24, weight:800, fill:DEEP, anchor:"middle"}));
+    s.push(cleanArrow(gx0+gsz/2, gy0+gsz+90, 220, "right", DEEP));
+    s.push(Trot(gx0-70, gy0+gsz/2, -90, "Likelihood", {size:24, weight:800, fill:DEEP, anchor:"middle"}));
+    s.push(cleanArrow(gx0-116, gy0+gsz/2, 220, "up", DEEP));
+    // right column: NOT AT RISK list (top), then ASSETS list (below)
+    var rx=gx0+gsz+70, ry=gy0-5;
+    s.push(T(rx, ry, "NOT AT RISK", {size:23, weight:700, fill:DEEP}));
+    s.push(T(rx, ry+26, "(beyond the buffer) — "+excluded.length+" asset"+(excluded.length===1?"":"s"), {size:16, fill:MUT}));
+    var ey=ry+56, erowH=Math.max(20,Math.min(30,(320)/Math.max(1,excluded.length)));
+    excluded.forEach(function(p,idx){ var yy=ey+idx*erowH, rr=Math.min(12,erowH*0.42);
+      s.push('<circle cx="'+(rx+rr)+'" cy="'+(yy-rr*0.5)+'" r="'+rr+'" fill="#8a97a3"/>');
+      s.push(T(rx+rr, yy-rr*0.5+rr*0.7, String(p.i+1), {size:rr*1.1, weight:700, fill:"#fff", anchor:"middle"}));
+      var nm=(p.name||"(unnamed)"); if(nm.length>34)nm=nm.slice(0,33)+"…";
+      s.push(T(rx+rr*2+8, yy-rr*0.5+rr*0.7, nm, {size:16, fill:"#22303b"})); });
+    if(!excluded.length) s.push(T(rx, ey+8, "None — every asset is exposed within this horizon.", {size:16, fill:MUT}));
+    var listY=ey+(excluded.length?excluded.length*erowH:20)+58;
+    s.push('<line x1="'+rx+'" y1="'+(listY-24)+'" x2="'+(PGW-70)+'" y2="'+(listY-24)+'" stroke="'+LINEC+'" stroke-width="1.5"/>');
+    s.push(assetListSvg({pts:geo.pts}, rx, listY, PGW-70-rx, true, function(){return DEEP;}));
+    s.push('</svg>');
+    return s.join("");
+  }
+
+  // ---- BANDING PAGE (full width, names inside) ----
+  function drawBandingPage(rowsDef, title){
+    var s=[pageBox(), pageTitle(title)];
+    var pad=70, top=150, rh=(PGH-top-60)/rowsDef.length, W=PGW-2*pad;
+    rowsDef.forEach(function(rd,i){ var y=top+i*rh;
+      s.push('<rect x="'+pad+'" y="'+y+'" width="'+W+'" height="'+(rh-14)+'" rx="14" fill="'+rd.color+'" fill-opacity="0.42" stroke="'+rd.color+'" stroke-width="2"/>');
+      s.push(T(pad+22, y+40, rd.label+" — "+rd.assets.length+" asset"+(rd.assets.length===1?"":"s"), {size:26, weight:700, fill:"#22303b"}));
+      var names=rd.assets.map(function(p){ var nm=p.name||"(unnamed)"; if(nm.length>42)nm=nm.slice(0,41)+"…"; return (p.i+1)+". "+nm; });
+      if(!names.length){ s.push(T(pad+22, y+76, "—", {size:20, fill:MUT})); return; }
+      var innerH=rh-14-56, lineH=30, maxRows=Math.max(1,Math.floor(innerH/lineH));
+      var nCols=Math.min(4, Math.max(1, Math.ceil(names.length/maxRows))), rowsPer=Math.min(maxRows, Math.ceil(names.length/nCols)), colW=(W-44)/nCols;
+      var cap=nCols*rowsPer, shown=names.slice(0,cap), overflow=names.length-shown.length;
+      shown.forEach(function(nm,k){ var col=Math.floor(k/rowsPer), rw=k%rowsPer; s.push(T(pad+22+col*colW, y+74+rw*lineH, nm, {size:20, fill:"#22303b"})); });
+      if(overflow>0) s.push(T(PGW-pad-22, y+rh-24, "+"+overflow+" more", {size:18, fill:MUT, anchor:"end"}));
+    });
+    s.push('</svg>');
+    return s.join("");
+  }
+
+  // ---- TITLE PAGE ----
+  function drawTitlePage(geo){
+    var s=[pageBox()];
+    s.push('<rect x="0" y="0" width="'+PGW+'" height="470" fill="'+DEEP+'"/>');
+    s.push(T(PGW/2, 150, "PATH · A COASTAL EROSION RISK TOOL", {size:34, weight:700, fill:"#cfe0ee", anchor:"middle"}));
+    s.push(T(PGW/2, 285, state.community||"Community", {size:92, weight:800, fill:"#ffffff", anchor:"middle"}));
+    s.push(T(PGW/2, 375, "Vulnerability & risk of shoreline erosion to community infrastructure", {size:34, weight:600, fill:"#dbe9f4", anchor:"middle"}));
+    var nA=geo?geo.pts.length:0, nT=geo?geo.transects.length:0;
+    var mx=130, my=590, meta=[["Prepared:", fmtDate()], ["Prepared by:", state.admin||"—"],
+      ["Time Horizon 1:", hzOut(0)||"—"], ["Time Horizon 2:", hzOut(1)||"—"], ["Time Horizon 3:", hzOut(2)||"—"],
+      ["Assets assessed:", String(nA)], ["Shoreline transects:", String(nT)], ["Buffer zone:", (state.settings.buffer)+" m"]];
+    meta.forEach(function(row,i){ var y=my+i*54;
+      s.push(T(mx, y, row[0], {size:30, weight:700, fill:DEEP})); s.push(T(mx+360, y, row[1], {size:30, fill:"#1d2733"})); });
+    var cx=820, cy=560; s.push(T(cx, cy, "CONTENTS", {size:30, weight:700, fill:DEEP}));
+    var toc=["1. Erosion Vulnerability maps (3 horizons)","2. Erosion Risk Matrix (3 horizons)","3. Erosion Risk Banding (3 horizons)",
+      "4. Shoreline Recession Over Time (2 scenarios)","5. When Assets Become Vulnerable (2 scenarios)","6. Understanding Erosion","7. Understanding Risk","8. Adaptation Options","9. Get Involved & Contacts","10. Reference Tables"];
+    toc.forEach(function(li,i){ s.push(T(cx, cy+46+i*44, li, {size:26, fill:"#1d2733"})); });
+    s.push('<line x1="70" y1="1010" x2="'+(PGW-70)+'" y2="1010" stroke="'+LINEC+'" stroke-width="2"/>');
+    s.push(T(70, 1052, "Schematic, shore-aligned maps (sea at the bottom; north arrow rotated). Assets are scored by whether they fall inside the mapped recession envelopes.", {size:20, fill:MUT}));
+    s.push(T(70, 1082, "Read alongside Inuit Qaujimajatuqangit and local knowledge. Aligned with the spirit of the Inuit Circumpolar Council’s Ethical & Equitable Engagement (EEE) protocols.", {size:20, fill:MUT}));
+    s.push('</svg>');
+    return s.join("");
+  }
+
+  // ---- INFO PAGE HELPERS ----
+  function infoIntro(title, lead){ return pageTitle(title)+T(70, 150, lead, {size:26, fill:"#22303b"}); }
+  function para(x,y,str,size,maxCh,fill){ // simple word-wrap into <text> lines
+    var words=String(str).split(" "), lines=[], cur=""; maxCh=maxCh||60;
+    words.forEach(function(w){ var t=cur?cur+" "+w:w; if(t.length>maxCh&&cur){ lines.push(cur); cur=w; } else cur=t; });
+    if(cur)lines.push(cur);
+    return lines.map(function(ln,i){ return T(x, y+i*(size*1.35), ln, {size:size, fill:fill||"#22303b"}); }).join("");
+  }
+  function waterHatch(x,y,w,h){ return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+SEACOL+'"/>'; }
+
+  // ---- INFO: EROSION ----
+  // Shared shoreline scene: land is a solid block down to the base of the drawing (nothing
+  // under it); the sea sits to the RIGHT of the land with a wavy top surface; erosion is a
+  // notch cut into the land face, with the old shoreline shown dashed so the recession reads.
+  function scene(x,y,w,h,o){
+    o=o||{}; var out=[];
+    var landTop=y+Math.round(h*(o.landTopF!=null?o.landTopF:0.28));
+    var waterY=y+Math.round(h*(o.waterF!=null?o.waterF:0.55));
+    var bottom=y+h, xL=x, xR=x+w;
+    var shore0=x+Math.round(w*(o.shoreF!=null?o.shoreF:0.52));   // original land edge
+    var bite=o.bite||0;                                           // recession at the waterline
+    var ov=bite?Math.min(14,bite*0.3):0, bo=bite?Math.min(20,bite*0.5+6):0;
+    var face=shore0-bite;
+    // water: wavy surface from the land face out to the right edge, filled to the bottom
+    var amp=o.waveAmp!=null?o.waveAmp:7, wl=o.waveLen||90;
+    var n=Math.max(8,Math.round((xR-face)/12)), wpts=[];
+    for(var i=0;i<=n;i++){ var wx=face+(xR-face)*i/n; wpts.push([wx, waterY-amp*Math.sin((wx-face)/wl*Math.PI*2)]); }
+    out.push('<polygon points="'+poly(wpts.concat([[xR,bottom],[face+bo,bottom]]))+'" fill="'+SEACOL+'"/>');
+    out.push('<polyline points="'+poly(wpts)+'" fill="none" stroke="'+SHORE+'" stroke-width="3"/>');
+    // land block down to the bottom, with the erosion notch at the waterline
+    out.push('<polygon points="'+poly([[xL,landTop],[face+ov,landTop],[face,waterY],[face+bo,bottom],[xL,bottom]])+'" fill="#eaddc4" stroke="#c9b38e" stroke-width="2"/>');
+    // dashed ghost of the old land edge + recession arrow
+    if(o.ghost&&bite>0){
+      out.push('<polyline points="'+poly([[face+ov,landTop],[shore0,landTop],[shore0,waterY]])+'" fill="none" stroke="#b08a4a" stroke-width="2.5" stroke-dasharray="8 6"/>');
+      var gy=landTop-12;
+      out.push('<line x1="'+shore0+'" y1="'+gy+'" x2="'+(face+ov+14)+'" y2="'+gy+'" stroke="#b08a4a" stroke-width="3"/>');
+      out.push('<polygon points="'+(face+ov)+','+gy+' '+(face+ov+13)+','+(gy-6)+' '+(face+ov+13)+','+(gy+6)+'" fill="#b08a4a"/>');
+      if(o.ghostLabel!==false) out.push(T((shore0+face)/2, gy-10, "the shore moves inland", {size:15, fill:"#8a6d3b", anchor:"middle"}));
+    }
+    // a piece of land breaking off into the water
+    if(o.chunk&&bite>0){ var chx=face+Math.max(18,bite*0.5), chy=waterY+6;
+      out.push('<polygon points="'+poly([[chx,chy],[chx+17,chy-8],[chx+28,chy+3],[chx+13,chy+11]])+'" fill="#d8c7a5" stroke="#b08a4a" stroke-width="1.5"/>');
+      out.push('<circle cx="'+(chx+38)+'" cy="'+(chy+10)+'" r="2.6" fill="#b08a4a"/>');
+      out.push('<circle cx="'+(chx-8)+'" cy="'+(chy+14)+'" r="2.2" fill="#b08a4a"/>');
+    }
+    // waves push toward the land
+    if(o.arrow!==false){
+      var awy=waterY-amp-14, ax1=face+Math.min(160,(xR-face)*0.55), ax0=face+24;
+      out.push('<line x1="'+ax1+'" y1="'+awy+'" x2="'+(ax0+12)+'" y2="'+awy+'" stroke="'+DEEP+'" stroke-width="3"/>');
+      out.push('<polygon points="'+ax0+','+awy+' '+(ax0+13)+','+(awy-6)+' '+(ax0+13)+','+(awy+6)+'" fill="'+DEEP+'"/>');
+      if(o.waveLabel) out.push(T(ax1+10, awy+5, o.waveLabel, {size:15, fill:DEEP}));
+    }
+    // sea ice: small fragmented floes riding the water surface
+    if(o.floes){
+      var fx0=face+16, fx1=xR-12;
+      if(o.floes==="many"){ for(var fx=fx0; fx<fx1-24; fx+=32){
+        out.push('<rect x="'+f1(fx)+'" y="'+f1(waterY-9-amp*Math.sin((fx-face)/wl*Math.PI*2))+'" width="'+(20+((fx>>3)%3)*5)+'" height="9" rx="4" fill="#ffffff" stroke="#9fc6de" stroke-width="1.5"/>'); } }
+      else { [0.3,0.6,0.88].forEach(function(f){ var fx=fx0+(fx1-fx0)*f;
+        out.push('<rect x="'+f1(fx)+'" y="'+f1(waterY-9-amp*Math.sin((fx-face)/wl*Math.PI*2))+'" width="20" height="8" rx="4" fill="#ffffff" stroke="#9fc6de" stroke-width="1.5"/>'); }); }
+    }
+    // permafrost inside the land + thawed crumbly zone at the face; the dash rows stop well
+    // above the bottom edge so the "frozen ground" label sits in a clear band beneath them
+    if(o.frost){
+      var frostRowsBottom=bottom-40;
+      for(var fy=waterY+8; fy<frostRowsBottom; fy+=18){ for(var fx2=xL+14; fx2<face-52; fx2+=38){
+        out.push('<line x1="'+fx2+'" y1="'+fy+'" x2="'+(fx2+17)+'" y2="'+fy+'" stroke="#9fb7c6" stroke-width="2.5"/>'); } }
+      for(var k3=0;k3<12;k3++){ var tx=face-40+((k3*29)%38), ty=waterY-4+((k3*17)%(frostRowsBottom-waterY-6));
+        out.push('<circle cx="'+tx+'" cy="'+ty+'" r="2.4" fill="#a8804a"/>'); }
+      out.push(T(xL+12, bottom-16, "frozen ground (permafrost)", {size:15, fill:"#5f7d92"}));
+      out.push(T(face-48, waterY-10, "thawed = soft & crumbly", {size:15, fill:"#8a6d3b", anchor:"end"}));
+    }
+    if(o.storm){
+      out.push(T(face+(xR-face)*0.55, landTop+8, "STORM", {size:18, weight:800, fill:ENV.high.line}));
+      for(var r3=0;r3<6;r3++){ var rx2=face+34+(xR-face-70)*r3/5;
+        out.push('<line x1="'+f1(rx2)+'" y1="'+(landTop+16)+'" x2="'+f1(rx2-8)+'" y2="'+(landTop+32)+'" stroke="#5a87a8" stroke-width="2.5"/>'); }
+    }
+    if(o.tags!==false){
+      out.push(T(xL+10, landTop+24, "LAND", {size:14, weight:700, fill:"#8a6d3b"}));
+      out.push(T(xR-10, waterY+30, "SEA", {size:14, weight:700, fill:"#1d5b86", anchor:"end"}));
+    }
+    return out.join("");
+  }
+  function drawErosionInfo(){
+    var s=[pageBox(), infoIntro("Understanding Erosion", "Erosion is when the sea slowly wears the land away, so the shoreline moves inland. Here is how it happens.")];
+    var px=[70,830], py=[205,660], pw=700, ph=430;
+    function panelBox(x,y){ s.push('<rect x="'+x+'" y="'+y+'" width="'+pw+'" height="'+ph+'" rx="16" fill="#f7fafc" stroke="'+LINEC+'" stroke-width="1.5"/>'); }
+    // 1 · waves
+    panelBox(px[0],py[0]);
+    s.push(scene(px[0]+24, py[0]+20, pw-48, 190, {bite:30, chunk:true, ghost:true, waveLabel:"waves push at the land"}));
+    s.push(T(px[0]+24, py[0]+254, "Waves cut into the land", {size:26, weight:700, fill:DEEP}));
+    s.push(para(px[0]+24, py[0]+290, "Every wave rubs away a little sand and soil and carries it out to sea. Year after year the waves cut a notch into the shore, pieces of land break off, and the shoreline moves inland.", 21, 58));
+    // 2 · storms
+    panelBox(px[1],py[0]);
+    s.push(scene(px[1]+24, py[0]+20, pw-48, 190, {bite:52, waveAmp:14, waterF:0.48, chunk:true, ghost:true, storm:true}));
+    s.push(T(px[1]+24, py[0]+254, "Storms speed it up", {size:26, weight:700, fill:DEEP}));
+    s.push(para(px[1]+24, py[0]+290, "Big storms bring higher water and much bigger waves. A single bad storm can bite off in one day what calm waves would take years to remove.", 21, 58));
+    // 3 · less sea ice (before / now comparison)
+    panelBox(px[0],py[1]);
+    var hw=Math.floor((pw-48-26)/2);
+    s.push(T(px[0]+24, py[1]+38, "BEFORE — sea ice shields the shore", {size:16, weight:700, fill:MUT}));
+    s.push(T(px[0]+24+hw+26, py[1]+38, "NOW — less ice, waves get through", {size:16, weight:700, fill:MUT}));
+    s.push(scene(px[0]+24, py[1]+48, hw, 160, {shoreF:0.4, bite:6, waveAmp:2, floes:"many", arrow:false, ghost:false, tags:false}));
+    s.push(scene(px[0]+24+hw+26, py[1]+48, hw, 160, {shoreF:0.4, bite:24, waveAmp:9, floes:"few", ghost:true, ghostLabel:false, chunk:true, tags:false}));
+    s.push(T(px[0]+24, py[1]+254, "Less sea ice", {size:26, weight:700, fill:DEEP}));
+    s.push(para(px[0]+24, py[1]+290, "Sea ice used to lock up the shore for much of the year, blocking the waves like a shield. Now the ice forms later, melts earlier and breaks into smaller pieces — so waves pound the shore for longer every year.", 21, 58));
+    // 4 · thawing ground
+    panelBox(px[1],py[1]);
+    s.push(scene(px[1]+24, py[1]+20, pw-48, 190, {bite:34, chunk:true, frost:true, ghost:true, ghostLabel:false}));
+    s.push(T(px[1]+24, py[1]+254, "Thawing ground", {size:26, weight:700, fill:DEEP}));
+    s.push(para(px[1]+24, py[1]+290, "Much of the ground here is frozen all year (permafrost). As it thaws it turns soft and crumbly, so the waves can carve it away far more easily.", 21, 58));
+    s.push('</svg>');
+    return s.join("");
+  }
+
+  // ---- INFO: RISK ----
+  function drawRiskInfo(){
+    var s=[pageBox(), infoIntro("Understanding Risk", "“Risk” means how likely the sea is to reach a building, and how bad it would be if it did.")];
+    var x0=90, x1=PGW-90, y0=270, y1=1040, w=x1-x0, zH=y1-y0;
+    var zones=[
+      {f:0.00,t:0.12,fill:SEACOL,line:"#7fb3d3",title:"SEA",tc:"#1d5b86",body:null},
+      {f:0.12,t:0.34,fill:ENV.high.fill,line:ENV.high.line,title:"HIGH RISK",tc:"#b02a1c",body:"The sea is expected to reach this strip first, even under the gentler (Baseline) erosion. Buildings here need attention soonest.",action:"ACT NOW",icon:"warn"},
+      {f:0.34,t:0.56,fill:ENV.mod.fill,line:ENV.mod.line,title:"MODERATE RISK",tc:"#8a6100",body:"The sea reaches this strip only if erosion happens faster (the High scenario). Keep a close watch on buildings here.",action:"MONITOR AND PLAN",icon:"eye"},
+      {f:0.56,t:0.78,fill:ENV.low.fill,line:ENV.low.line,title:"LOW RISK",tc:"#256b45",body:"A safety strip just past the fastest expected erosion. Not expected to be lost, but a sensible place to plan ahead.",action:"MONITOR",icon:"eye"},
+      {f:0.78,t:1.00,fill:LANDCOL,line:"#c9b38e",title:"SAFER LAND",tc:"#8a6d3b",body:"Ground beyond the mapped erosion zones. The sea is not expected to reach here within the years this study looks at.",action:"SAFE FOR NOW",icon:"check"}
+    ];
+    function badge(zx,zw,cy,col,label,ic){
+      var pw2=Math.min(zw-30,300), ph2=80, bx=zx+(zw-pw2)/2, by=cy-ph2/2;
+      s.push('<rect x="'+f1(bx)+'" y="'+f1(by)+'" width="'+f1(pw2)+'" height="'+ph2+'" rx="16" fill="'+col+'"/>');
+      var icx=bx+42, icy=by+ph2/2, ir=23;
+      if(ic==="warn"){ s.push('<polygon points="'+f1(icx)+','+f1(icy-ir)+' '+f1(icx+ir)+','+f1(icy+ir*0.82)+' '+f1(icx-ir)+','+f1(icy+ir*0.82)+'" fill="#fff"/>');
+        s.push(T(icx, icy+ir*0.55, "!", {size:ir*1.15, weight:800, fill:col, anchor:"middle"})); }
+      else if(ic==="eye"){ s.push('<circle cx="'+f1(icx)+'" cy="'+f1(icy)+'" r="'+ir+'" fill="none" stroke="#fff" stroke-width="3.4"/>');
+        s.push('<circle cx="'+f1(icx)+'" cy="'+f1(icy)+'" r="'+f1(ir*0.42)+'" fill="#fff"/>'); }
+      else if(ic==="check"){ s.push('<polyline points="'+f1(icx-ir*0.7)+','+f1(icy)+' '+f1(icx-ir*0.1)+','+f1(icy+ir*0.55)+' '+f1(icx+ir*0.78)+','+f1(icy-ir*0.62)+'" fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>'); }
+      var tL=icx+ir+12, tR=bx+pw2-14, fsz=Math.max(15,Math.min(28,(tR-tL)/(label.length*0.60)));
+      s.push(T((tL+tR)/2, icy+fsz*0.34, label, {size:fsz, weight:800, fill:"#fff", anchor:"middle"}));
+    }
+    zones.forEach(function(z){ var zx=x0+w*z.f, zw=w*(z.t-z.f);
+      s.push('<rect x="'+f1(zx)+'" y="'+y0+'" width="'+f1(zw)+'" height="'+zH+'" fill="'+z.fill+'" stroke="'+z.line+'" stroke-width="2"/>');
+      s.push(T(zx+zw/2, y0+70, z.title, {size:32, weight:800, fill:z.tc, anchor:"middle"}));
+      if(z.body){ var maxCh=Math.max(14, Math.floor((zw-56)/12));
+        s.push(para(zx+28, y0+134, z.body, 23, maxCh)); }
+      if(z.action) badge(zx, zw, y0+520, z.tc, z.action, z.icon);
+    });
+    var ay=y0+zH-86;
+    s.push('<line x1="'+f1(x0+w*0.05)+'" y1="'+ay+'" x2="'+f1(x0+w*0.70)+'" y2="'+ay+'" stroke="'+DEEP+'" stroke-width="8" stroke-dasharray="22 15"/>');
+    s.push('<polygon points="'+f1(x0+w*0.70+46)+','+ay+' '+f1(x0+w*0.70)+','+(ay-18)+' '+f1(x0+w*0.70)+','+(ay+18)+'" fill="'+DEEP+'"/>');
+    s.push(T(x0+w*0.37, ay+52, "The sea moves this way over time", {size:32, weight:700, fill:DEEP, anchor:"middle"}));
+    s.push('</svg>');
+    return s.join("");
+  }
+
+  // ---- INFO: ADAPTATION ----
+  function drawAdaptationInfo(){
+    var s=[pageBox(), infoIntro("Adaptation Options", "There are three main ways a community can respond to erosion. Each has trade-offs.")];
+    var opts=[["Do Nothing","Let the shore keep moving and don’t build anything. It costs no money now, but land keeps washing away and buildings close to the sea may eventually be lost.","nothing"],
+              ["Defend","Build a wall or place big rocks along the shore to hold the sea back. The land behind it is protected, but it costs a lot and needs repairs.","defend"],
+              ["Retreat","Move buildings and roads further back from the sea, onto safer ground. It keeps people safe long-term, but moving things is hard and costly.","retreat"]];
+    var pw=460, gap=30, x0=70, y0=280, ph=560;
+    opts.forEach(function(o,i){ var x=x0+i*(pw+gap);
+      s.push('<rect x="'+x+'" y="'+y0+'" width="'+pw+'" height="'+ph+'" rx="16" fill="#f7fafc" stroke="'+LINEC+'" stroke-width="1.5"/>');
+      s.push(T(x+pw/2, y0+46, o[0], {size:28, weight:800, fill:DEEP, anchor:"middle"}));
+      // shared geometry: the ORIGINAL land edge and the initial house position are the same
+      // in all three drawings; land runs to the bottom of the drawing, sea to its right
+      var sx=x+26, sw=pw-52, sy=y0+74, sh=210;
+      var landTop=sy+64, waterY=sy+122, bottom=sy+sh, xR=sx+sw;
+      var shore0=sx+Math.round(sw*0.74), hx0=sx+Math.round(sw*0.34);
+      var eroded=(o[2]!=="defend");
+      var bite=eroded?Math.round(sw*0.30):0, ov=eroded?10:0, bo=eroded?16:0;
+      var face=shore0-bite;
+      // water (wavy surface toward the shore), then land, then rocks/houses on top
+      var amp=7, wl=90, n=Math.max(8,Math.round((xR-face)/12)), wpts=[];
+      for(var k=0;k<=n;k++){ var wx=face+(xR-face)*k/n; wpts.push([wx, waterY-amp*Math.sin((wx-face)/wl*Math.PI*2)]); }
+      s.push('<polygon points="'+poly(wpts.concat([[xR,bottom],[face+bo,bottom]]))+'" fill="'+SEACOL+'"/>');
+      s.push('<polyline points="'+poly(wpts)+'" fill="none" stroke="'+SHORE+'" stroke-width="3"/>');
+      s.push('<polygon points="'+poly([[sx,landTop],[face+ov,landTop],[face,waterY],[face+bo,bottom],[sx,bottom]])+'" fill="#eaddc4" stroke="#c9b38e" stroke-width="2"/>');
+      var awy=waterY-amp-13, ax1=face+Math.min(130,(xR-face)*0.6), ax0=face+24;
+      s.push('<line x1="'+f1(ax1)+'" y1="'+awy+'" x2="'+(ax0+12)+'" y2="'+awy+'" stroke="'+DEEP+'" stroke-width="3"/>');
+      s.push('<polygon points="'+ax0+','+awy+' '+(ax0+13)+','+(awy-6)+' '+(ax0+13)+','+(awy+6)+'" fill="'+DEEP+'"/>');
+      if(eroded){
+        // dashed ghost of the original edge + a piece of land breaking off (not reaching the house)
+        s.push('<polyline points="'+poly([[face+ov,landTop],[shore0,landTop],[shore0,waterY]])+'" fill="none" stroke="#b08a4a" stroke-width="2.5" stroke-dasharray="8 6"/>');
+        var chx=face+22, chy=waterY+4;
+        s.push('<polygon points="'+poly([[chx,chy],[chx+18,chy-8],[chx+30,chy+4],[chx+14,chy+12]])+'" fill="#d8c7a5" stroke="#b08a4a" stroke-width="1.5"/>');
+        s.push('<circle cx="'+(chx+40)+'" cy="'+(chy+10)+'" r="2.6" fill="#b08a4a"/>');
+      }
+      if(o[2]==="defend"){
+        // rock armour: a right-angle triangle built entirely from little rocks
+        var toe=Math.round(sw*0.20);
+        for(var ry=landTop+7; ry<bottom-4; ry+=13){
+          var fr=(ry-landTop)/(bottom-landTop), maxX=shore0+Math.round(toe*fr);
+          for(var cx2=shore0+7; cx2<=maxX; cx2+=13){
+            s.push('<circle cx="'+cx2+'" cy="'+ry+'" r="6.4" fill="'+(((cx2+ry)%26<13)?"#b8c2c9":"#9aa6ae")+'" stroke="#6d7a82" stroke-width="1.4"/>');
+          }
+        }
+        s.push(T(shore0+toe*0.5, bottom+22, "wall / rocks", {size:14, fill:MUT, anchor:"middle"}));
+      }
+      function hs(cx){ return '<g><rect x="'+(cx-18)+'" y="'+(landTop-32)+'" width="36" height="30" fill="#fff" stroke="'+DEEP+'" stroke-width="2"/><polygon points="'+(cx-23)+','+(landTop-32)+' '+cx+','+(landTop-50)+' '+(cx+23)+','+(landTop-32)+'" fill="'+DEEP+'"/></g>'; }
+      function hsGhost(cx){ return '<g opacity="0.55"><rect x="'+(cx-18)+'" y="'+(landTop-32)+'" width="36" height="30" fill="none" stroke="#8a97a3" stroke-width="2" stroke-dasharray="5 4"/><polygon points="'+(cx-23)+','+(landTop-32)+' '+cx+','+(landTop-50)+' '+(cx+23)+','+(landTop-32)+'" fill="none" stroke="#8a97a3" stroke-width="2" stroke-dasharray="5 4"/></g>'; }
+      if(o[2]==="retreat"){ var hx1=sx+Math.round(sw*0.10);
+        s.push(hsGhost(hx0)); s.push(hs(hx1));
+        var ry2=landTop-62;
+        s.push('<line x1="'+(hx0-2)+'" y1="'+ry2+'" x2="'+(hx1+30)+'" y2="'+ry2+'" stroke="'+DEEP+'" stroke-width="4"/>');
+        s.push('<polygon points="'+(hx1+16)+','+ry2+' '+(hx1+30)+','+(ry2-7)+' '+(hx1+30)+','+(ry2+7)+'" fill="'+DEEP+'"/>');
+      } else { s.push(hs(hx0)); }
+      s.push(para(x+30, y0+340, o[1], 22, 34));
+    });
+    s.push('</svg>');
+    return s.join("");
+  }
+
+  // ---- INFO: CONTACT / GET INVOLVED ----
+  function drawContactInfo(geo){
+    var s=[pageBox(), infoIntro("Get Involved & Contacts", "These maps belong to the community. Your knowledge makes them better.")];
+    var colX=90, y=290;
+    function block(x,y,w,h,head){ return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="14" fill="#f7fafc" stroke="'+LINEC+'"/>'+T(x+22,y+40,head,{size:26,weight:700,fill:DEEP}); }
+    s.push(block(colX, y, 700, 300, "About this study"));
+    s.push(para(colX+22, y+80, "This assessment maps how far the shoreline could wear back over three future years, and which community buildings could be affected. The maps are a planning guide, not an exact prediction.", 21, 56));
+    s.push(T(colX+22, y+220, "Community: "+(state.community||"—"), {size:21, weight:700, fill:"#22303b"}));
+    s.push(T(colX+22, y+252, "Time horizons: "+[hzOut(0),hzOut(1),hzOut(2)].filter(Boolean).join(", "), {size:21, fill:"#22303b"}));
+    s.push(T(colX+22, y+282, "Prepared: "+fmtDate(), {size:21, fill:"#22303b"}));
+    s.push(block(820, y, 700, 300, "How to learn more & take part"));
+    s.push(para(820+22, y+80, "• Come to a community meeting about the maps.  • Add your own memories of where the shore used to be.  • Tell us about places that flood or wash out.  • Help decide which buildings matter most.", 21, 56));
+    var by=y+340;
+    s.push(block(colX, by, 700, 300, "Who to contact"));
+    s.push(T(colX+22, by+86, "Community Administrator", {size:22, weight:700, fill:"#22303b"}));
+    s.push(T(colX+22, by+122, state.admin||"(name)", {size:21, fill:"#22303b"}));
+    s.push(T(colX+22, by+164, "Phone / email: ____________________________", {size:20, fill:MUT}));
+    s.push(T(colX+22, by+206, "Office: ____________________________________", {size:20, fill:MUT}));
+    s.push(block(820, by, 700, 300, "Your feedback"));
+    ["What looks right or wrong on these maps?","Which places worry you most?","What should we do next?"].forEach(function(q,i){ var yy=by+90+i*68;
+      s.push(T(820+22, yy, q, {size:20, weight:700, fill:"#22303b"})); s.push('<line x1="'+(820+22)+'" y1="'+(yy+28)+'" x2="'+(820+678)+'" y2="'+(yy+28)+'" stroke="'+LINEC+'" stroke-width="1.5"/>'); });
+    s.push('</svg>');
+    return s.join("");
+  }
+
+  // ---- SUMMARY REFERENCE TABLES ----
+  function tableSvg(x, y, w, cols, rows, opt){ // cols:[{t,wf,align}], rows:[[{v,bg,fg}]]
+    opt=opt||{}; var hh=opt.headH||46, rh=opt.rowH||40, fs=opt.fs||19, hfs=opt.hfs||16;
+    var totW=cols.reduce(function(a,c){return a+c.wf;},0);
+    var xs=[x]; cols.forEach(function(c){ xs.push(xs[xs.length-1]+w*c.wf/totW); });
+    var s=[]; var totalH=hh*(opt.headRows||1)+rows.length*rh;
+    // header
+    if(opt.headRows===2){
+      s.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+(hh*2)+'" fill="'+DEEP+'"/>');
+      opt.grpHeader.forEach(function(g){ var gx0=xs[g.c0], gx1=xs[g.c1+1]; if(g.span){ s.push(T((gx0+gx1)/2, y+28, g.t, {size:hfs, weight:700, fill:"#fff", anchor:"middle"})); } });
+      cols.forEach(function(c,ci){ if(c.sub!=null) s.push(T((xs[ci]+xs[ci+1])/2, y+hh+28, c.sub, {size:hfs, weight:700, fill:"#fff", anchor:"middle"})); else s.push(T((xs[ci]+xs[ci+1])/2, y+hh*0.9+12, c.t, {size:hfs, weight:700, fill:"#fff", anchor:(c.align||"middle")==="left"?"start":"middle"})); });
+    } else {
+      s.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'" fill="'+DEEP+'"/>');
+      cols.forEach(function(c,ci){ var tx=(c.align==="left")?(xs[ci]+12):((xs[ci]+xs[ci+1])/2); s.push(T(tx, y+hh*0.64, c.t, {size:hfs, weight:700, fill:"#fff", anchor:c.align==="left"?"start":"middle"})); });
+    }
+    var y0=y+hh*(opt.headRows||1);
+    rows.forEach(function(row,ri){ var ry=y0+ri*rh;
+      if(ri%2===1) s.push('<rect x="'+x+'" y="'+ry+'" width="'+w+'" height="'+rh+'" fill="#f4f8fb"/>');
+      row.forEach(function(cellV,ci){ var cell=(typeof cellV==="object"&&cellV)?cellV:{v:cellV};
+        if(cell.bg) s.push('<rect x="'+xs[ci]+'" y="'+ry+'" width="'+(xs[ci+1]-xs[ci])+'" height="'+rh+'" fill="'+cell.bg+'"/>');
+        var al=cols[ci].align||"middle", tx=al==="left"?(xs[ci]+12):((xs[ci]+xs[ci+1])/2);
+        s.push(T(tx, ry+rh*0.66, cell.v==null?"":String(cell.v), {size:fs, weight:cell.b?700:400, fill:cell.fg||"#22303b", anchor:al==="left"?"start":"middle"})); });
+    });
+    // gridlines
+    s.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+totalH+'" fill="none" stroke="'+LINEC+'" stroke-width="1.5"/>');
+    for(var ci=1;ci<xs.length-1;ci++) s.push('<line x1="'+xs[ci]+'" y1="'+y0+'" x2="'+xs[ci]+'" y2="'+(y+totalH)+'" stroke="#eef2f6" stroke-width="1"/>');
+    for(var ri2=0;ri2<=rows.length;ri2++) s.push('<line x1="'+x+'" y1="'+(y0+ri2*rh)+'" x2="'+(x+w)+'" y2="'+(y0+ri2*rh)+'" stroke="#e4ebf1" stroke-width="1"/>');
+    return {svg:s.join(""), bottom:y+totalH};
+  }
+  function drawAssetTablePage(geo){
+    var s=[pageBox(), pageTitle("Reference Table — Asset Risk Register")];
+    var yr=[hzOut(0)||"TH1",hzOut(1)||"TH2",hzOut(2)||"TH3"];
+    var bg={High:"#fbe6e3",Moderate:"#fcf3d9",Low:"#e4f3ea","Not at Risk":"#eef1f4"}, fg={High:"#b02a1c",Moderate:"#8a6100",Low:"#256b45","Not at Risk":"#5a6b7a"};
+    var acols=[{t:"#",wf:0.5},{t:"Asset",wf:4,align:"left"},{t:"Consequence",wf:1.6},{t:"Distance to shore",wf:1.7},{t:"Risk "+yr[0],wf:1.5},{t:"Risk "+yr[1],wf:1.5},{t:"Risk "+yr[2],wf:1.5}];
+    var arows=geo.pts.map(function(p){ var r=[{v:p.i+1,b:true},{v:p.name||""},{v:p.cons?CONS_LABEL[p.cons]:"—"},{v:isFinite(p.D)?Math.round(p.D)+" m":"—"}];
+      [0,1,2].forEach(function(t){ var b=riskBand(riskScore(likelihood(geo,p,t),p.cons)); r.push({v:b,bg:bg[b],fg:fg[b],b:true}); }); return r; });
+    var rowH=Math.max(30,Math.min(54,(PGH-250)/Math.max(1,arows.length)));
+    s.push(tableSvg(70, 170, PGW-140, acols, arows, {rowH:rowH, fs:rowH>=40?22:19, hfs:18, headH:54}).svg);
+    s.push('</svg>'); return s.join("");
+  }
+  function drawTransectTablePage(geo){
+    var s=[pageBox(), pageTitle("Reference Table — Transect Recession (m)")];
+    var yr=[hzOut(0)||"TH1",hzOut(1)||"TH2",hzOut(2)||"TH3"];
+    var tcols=[{t:"#",wf:0.6},{t:"Latitude",wf:1.5},{t:"Longitude",wf:1.5},{t:"Orientation",wf:1.3},
+      {t:"Baseline",sub:yr[0],wf:1},{t:"Baseline",sub:yr[1],wf:1},{t:"Baseline",sub:yr[2],wf:1},{t:"High",sub:yr[0],wf:1},{t:"High",sub:yr[1],wf:1},{t:"High",sub:yr[2],wf:1}];
+    var trows=geo.transects.map(function(tt,i){ return [{v:i+1,b:true},{v:tt.lat},{v:tt.lng},{v:isFinite(tt.bearing)?r1(tt.bearing)+"°":"—"},
+      {v:fin(tt.b[0])},{v:fin(tt.b[1])},{v:fin(tt.b[2])},{v:fin(tt.h[0])},{v:fin(tt.h[1])},{v:fin(tt.h[2])}]; });
+    var rowH2=Math.max(22,Math.min(40,(PGH-260)/Math.max(1,trows.length)));
+    s.push(tableSvg(70, 190, PGW-140, tcols, trows, {headRows:2, headH:38, rowH:rowH2, fs:rowH2>=30?18:16, hfs:16,
+      grpHeader:[{c0:4,c1:6,t:"Baseline recession (m)",span:true},{c0:7,c1:9,t:"High recession (m)",span:true}]}).svg);
+    s.push('</svg>'); return s.join("");
+  }
+
+  // ================= BUILD OUTPUTS / PAGES =================
+  var lastPages=[];
+  function buildAllPages(geo){
+    var pages=[]; var hzY=[hzOut(0)||"Horizon 1",hzOut(1)||"Horizon 2",hzOut(2)||"Horizon 3"];
+    pages.push(drawTitlePage(geo));
+    // vulnerability envelopes per horizon
+    for(var t=0;t<3;t++){ var buf=geo.recKnots.h[t].map(function(k){return [k[0],k[1]-geo.buffer];});
+      var bands=[ {knots:geo.recKnots.b[t], fill:ENV.high.fill, line:ENV.high.line},
+                  {knots:geo.recKnots.h[t], fill:ENV.mod.fill, line:ENV.mod.line},
+                  {knots:buf, fill:ENV.low.fill, line:ENV.low.line, dash:true} ];
+      var legend=[ {t:"fill",color:ENV.high.fill,label:"High Vulnerability to Erosion"},
+                   {t:"fill",color:ENV.mod.fill,label:"Moderate Vulnerability to Erosion"},
+                   {t:"fill",color:ENV.low.fill,label:"Low Vulnerability to Erosion"},
+                   {t:"line",color:SHORE,label:"Existing Shoreline"},
+                   {t:"line",color:ENV.high.line,label:"Shoreline under Baseline Erosion Scenario"},
+                   {t:"line",color:ENV.mod.line,label:"Shoreline under High Erosion Scenario"},
+                   {t:"line",color:ENV.low.line,dash:true,label:"Buffer Zone from Shoreline under High Erosion Scenario"} ];
+      pages.push(drawMapPage(geo, geo.shoreKnots, bands, legend, "Erosion Vulnerability — "+hzLabel(t)));
+    }
+    // risk matrix per horizon
+    for(var t2=0;t2<3;t2++) pages.push(drawMatrixPage(geo, t2, "Erosion Risk Matrix — "+hzLabel(t2)));
+    // risk banding per horizon
+    for(var t3=0;t3<3;t3++){ var g={High:[],Moderate:[],Low:[],"Not at Risk":[]};
+      geo.pts.forEach(function(p){ g[riskBand(riskScore(likelihood(geo,p,t3),p.cons))].push(p); });
+      pages.push(drawBandingPage([{label:"High Risk (Score 6–9)",color:ENV.high.line,assets:g.High},{label:"Moderate Risk (3–4)",color:ENV.mod.line,assets:g.Moderate},{label:"Low Risk (1–2)",color:ENV.low.line,assets:g.Low},{label:"Not at Risk (0)",color:"#8a97a3",assets:g["Not at Risk"]}], "Erosion Risk Banding — "+hzLabel(t3))); }
+    // recession over time + when vulnerable, per scenario
+    ["b","h"].forEach(function(sc){ var scName=sc==="b"?"Baseline Erosion":"High Erosion";
+      var bands=[ {knots:geo.recKnots[sc][0], fill:ENV.high.fill, line:ENV.high.line},
+                  {knots:geo.recKnots[sc][1], fill:ENV.mod.fill, line:ENV.mod.line},
+                  {knots:geo.recKnots[sc][2], fill:ENV.low.fill, line:ENV.low.line} ];
+      var legend=[ {t:"fill",color:ENV.high.fill,label:"Land Lost by "+hzY[0]},{t:"fill",color:ENV.mod.fill,label:"Land Lost by "+hzY[1]},{t:"fill",color:ENV.low.fill,label:"Land Lost by "+hzY[2]},
+                   {t:"line",color:SHORE,label:"Existing Shoreline"},{t:"line",color:ENV.high.line,label:"Shoreline by "+hzY[0]},{t:"line",color:ENV.mod.line,label:"Shoreline by "+hzY[1]},{t:"line",color:ENV.low.line,label:"Shoreline by "+hzY[2]} ];
+      pages.push(drawMapPage(geo, geo.shoreKnots, bands, legend, "Shoreline Recession Over Time — "+scName));
+    });
+    ["b","h"].forEach(function(sc){ var scName=sc==="b"?"Baseline Erosion":"High Erosion";
+      var g={a:[],b:[],c:[],none:[]}; geo.pts.forEach(function(p){ if(reached(geo,p,sc,0))g.a.push(p); else if(reached(geo,p,sc,1))g.b.push(p); else if(reached(geo,p,sc,2))g.c.push(p); else g.none.push(p); });
+      pages.push(drawBandingPage([{label:"Vulnerable by "+hzY[0],color:ENV.high.line,assets:g.a},{label:"Vulnerable by "+hzY[1],color:ENV.mod.line,assets:g.b},{label:"Vulnerable by "+hzY[2],color:ENV.low.line,assets:g.c},{label:"Not Vulnerable Within The Horizons",color:"#8a97a3",assets:g.none}], "When Assets Become Vulnerable — "+scName)); });
+    // info pages (after figures, before tables)
+    pages.push(drawErosionInfo()); pages.push(drawRiskInfo()); pages.push(drawAdaptationInfo()); pages.push(drawContactInfo(geo));
+    // reference tables (last)
+    pages.push(drawAssetTablePage(geo)); pages.push(drawTransectTablePage(geo));
+    return pages;
+  }
+
+  function buildOutputs(){
+    var host=$("outputs"); host.innerHTML=""; lastPages=[];
+    var geo=buildGeo();
+    if(!geo){ host.appendChild(el("div",{class:"card"},[el("div",{class:"empty"},["Upload both sheets (or use the example data) to see the results."])])); $("dl-card").style.display="none"; $("settings-card").style.display="none"; return; }
+    if(!geo.hasTransects){ host.appendChild(el("div",{class:"card"},[el("div",{class:"scan-box warn"},[el("h3",{},["Transect sheet needed"]),el("div",{"html":"<p class='hint'>The asset inventory is loaded, but the recession envelopes come from the consultant’s <b>transect sheet</b>. Upload it to build the results.</p>"})])])); $("dl-card").style.display="none"; $("settings-card").style.display="block"; return; }
+    $("settings-card").style.display="block"; $("dl-card").style.display="block";
+    if(!geo.hasAssets){ host.appendChild(el("div",{class:"card"},[el("div",{class:"scan-box warn"},[el("h3",{},["No assets loaded"]),el("div",{"html":"<p class='hint'>Upload the <b>asset inventory</b> to place and score the assets.</p>"})])])); }
+    if(geo.dropped>0){ host.appendChild(el("div",{class:"card"},[el("div",{class:"scan-box warn"},[el("h3",{},[geo.dropped+" asset"+(geo.dropped>1?"s":"")+" left off the maps"]),el("div",{"html":"<p class='hint'>They’re missing a valid latitude or longitude.</p>"})])])); }
+    lastPages=buildAllPages(geo);
+    var wrap=el("div",{class:"pages"}); host.appendChild(wrap);
+    lastPages.forEach(function(svg,i){ wrap.appendChild(el("div",{class:"pageprev","html":svg})); });
+  }
+
+  // ================= results PDF (silent client-side download — no dialog) =================
+  function fmtDate(){ try{ return new Date().toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"}); }catch(e){ return ""; } }
+  function buildResultsDoc(){ return lastPages.slice(); }   // kept for the test hook
+  function downloadResultsPdf(){
+    if(!lastPages.length){ alert("No results yet — upload both sheets or use the example data first."); return; }
+    try{
+      var blob=window.PDFKIT.makePdfFromSvgs(lastPages, {wmm:1189, hmm:841});   // A0 landscape
+      downloadBlob(blob, "Erosion-Risk_Output.pdf");
+    }catch(e){ alert("Could not build the PDF: "+(e&&e.message||e)); }
+  }
+
+  // ================= README =================
+  function readmeText(){
+    return ["PATH: A COASTAL EROSION RISK TOOL — WALKTHROUGH (README)","========================================================","",
+      "A single web page (this .html file) that turns coastal-erosion findings into clear",
+      "vulnerability and risk maps. It runs offline in a browser; nothing is uploaded.","",
+      "STEP 1 — SUMMARY","  Overview and this walkthrough.","",
+      "STEP 2 — ASSET INVENTORY GENERATOR (Community Administrator)","  - List each community asset: name, latitude, longitude (decimal degrees) and",
+      "    consequence (Low / Moderate / High). Optionally set the three time horizons.","  - Download TWO blank sheets: the asset inventory (for the record) and the transect",
+      "    sheet (for the consultant). They are separate files.","",
+      "STEP 3 — CONSULTANT / ENGINEER (offline)","  - Fills the transect sheet: for each transect along the shore, its present-day",
+      "    coordinates, its orientation (the compass bearing the shoreline recedes toward),",
+      "    and the projected shoreline recession (m) for a Baseline and a High scenario at",
+      "    each time horizon. Transects should span far enough along the shore to cover every",
+      "    asset. Returns the file.","",
+      "STEP 4 — EROSION HAZARD INPUT (Community Administrator)","  - Upload BOTH sheets (asset inventory + transect sheet).","  - The tool draws the shoreline through the transect points and the receded shoreline",
+      "    by moving each point inland along its bearing. Maps are shore-aligned (sea at the",
+      "    bottom, north arrow rotated).","  - For each time horizon: a vulnerability-envelope map, a 3x3 risk matrix, and a",
+      "    High/Moderate/Low/Not-at-Risk banding; plus recession-over-time maps and",
+      "    when-vulnerable bandings for each scenario. Download them all as a PDF.","",
+      "HOW RISK IS SCORED","  An asset is exposed when it falls inside a recession envelope.",
+      "  Likelihood: inside the Baseline envelope = High(3); inside only the High envelope =",
+      "  Moderate(2); within the buffer beyond the High envelope = Low(1); beyond = 0.",
+      "  Consequence: Low(1) / Moderate(2) / High(3).  Risk = Likelihood x Consequence (1-9).","",
+      "NOTE","  The shoreline is drawn through the transect points, smoothed and extended to the map",
+      "  edges — schematic, not surveyed. Read alongside Inuit Qaujimajatuqangit and local",
+      "  knowledge."
+    ].join("\n");
+  }
+
+  // ================= file intake =================
+  function markDrop(id,done){ var dz=$(id); if(dz)dz.classList.toggle("done",!!done); }
+  function statusBox(hostId,kind,title,html){ $(hostId).innerHTML=""; $(hostId).appendChild(el("div",{class:"scan-box "+kind},[el("h3",{},[title]),el("div",{"html":html})])); }
+  function mergeHorizons(hz){ if(!hz)return; hz.forEach(function(v,i){ if(v)state.horizons[i]=v; }); }
+
+  function handleFile(file, kind){
+    if(!file) return;
+    var name=(file.name||"").toLowerCase();
+    var hostId=kind==="inv"?"inv-status":"tr-status";
+    var dzId=kind==="inv"?"dz-inv":"dz-tr";
+    statusBox(hostId,"ok","Reading "+esc(file.name)+"…","<p class='hint'>One moment…</p>");
+    var parse=kind==="inv"?parseInventory:parseTransects;
+    var apply=function(res){
+      if(!res.ok){ markDrop(dzId,false); statusBox(hostId,"warn","Couldn’t read that sheet","<p>"+esc(res.reason)+"</p><p class='hint'>Best results: use the "+(kind==="inv"?"asset inventory":"transect sheet")+" generated on Step 2.</p>"); return; }
+      mergeHorizons(res.horizons);
+      if(res.community) state.community=res.community;
+      if(kind==="inv"){ state.assets=res.assets; var n=res.assets.length; statusBox(hostId,"ok","Loaded "+n+" asset"+(n===1?"":"s"),"<p class='hint'>Horizons: "+esc(state.horizons.join(", "))+".</p>"); }
+      else { state.transects=res.transects; var m=res.transects.length; statusBox(hostId,"ok","Loaded "+m+" transect"+(m===1?"":"s"),"<p class='hint'>Horizons: "+esc(state.horizons.join(", "))+".</p>"); }
+      markDrop(dzId,true); pushInv(); persist(); renderAssets(); syncSettings(); buildOutputs();
+    };
+    var fail=function(e){ markDrop(dzId,false); statusBox(hostId,"warn","Couldn’t read that file","<p>"+esc(e&&e.message||String(e))+"</p>"); };
+    try{
+      if(/\.xlsx$/.test(name)) file.arrayBuffer().then(xlsxToGrid).then(function(g){apply(parse(g));},fail);
+      else if(/\.docx$/.test(name)) file.arrayBuffer().then(docxToGrid).then(function(g){apply(parse(g));},fail);
+      else file.text().then(function(t){apply(parse(csvToGrid(t)));},fail);
+    }catch(e){fail(e);}
+  }
+  function syncSettings(){ $("s-buffer").value=state.settings.buffer!=null?state.settings.buffer:20; }
+
+  // ================= example =================
+  function loadExample(){
+    state.community="Shaktoolik, AK"; state.admin="(example)";
+    state.horizons=["2040","2065","2100"];
+    var A=[
+      ["(O-2) Airfield",64.3451,-161.1585,3],
+      ["(B-1) Corporation Building",64.3372,-161.1558,2],
+      ["(B-4) Health Clinic",64.3366,-161.1551,3],
+      ["(B-5) School",64.3361,-161.1546,3],
+      ["(O-3) SNC/City/IRA/BSSD Fuel Tank Farm",64.3357,-161.1574,3],
+      ["(O-7) AVEC Power Plant",64.3352,-161.1569,3],
+      ["(U-3) Water Treatment Plant",64.3347,-161.1548,3],
+      ["(O-5) Vegetated Berm",64.3343,-161.1592,2],
+      ["(B-7b) Residential Housing (S of School)",64.3338,-161.1562,2],
+      ["(O-8) Borrow Pit (Beach Pit)",64.3312,-161.1586,3],
+      ["(R-3) Access Road (1st & 2nd Bend)",64.3295,-161.1578,2],
+      ["(U-4b) Summer Source Water Intake",64.3330,-161.1498,3]
+    ];
+    state.assets=A.map(function(b){return {name:b[0],lat:b[1],lng:b[2],cons:b[3]};});
+    // Transects along the Norton Sound (west) shore, spanning past every asset. Sea is to the
+    // west, so the shoreline recedes toward the east (bearing ~90°). A gentle arc keeps it tidy.
+    var tlat=[64.3282,64.3310,64.3338,64.3366,64.3394,64.3422,64.3450,64.3466];
+    state.transects=tlat.map(function(la,i){
+      var f=(la-64.3282)/(64.3466-64.3282);          // 0..1 along the shore
+      var lng=-161.1596-0.00045*Math.sin(f*Math.PI); // slight seaward bulge in the middle
+      var jitter=(i%2?1:-1)*0.6;                       // small per-transect variation
+      return {lat:Math.round(la*1e5)/1e5, lng:Math.round(lng*1e5)/1e5, bearing:Math.round((90+(f-0.5)*8)*10)/10,
+        b:[15+jitter,32+jitter,55+jitter*1.5], h:[26+jitter,55+jitter,100+jitter*2]};
+    });
+    state.settings={buffer:20};
+    pushInv(); persist(); renderAssets(); syncSettings();
+  }
+
+  // ================= wiring / nav =================
+  var PANELS=["summary","inventory","hazard"];
+  function switchTab(name){ document.querySelectorAll(".tab").forEach(function(t){t.classList.toggle("active",t.dataset.tab===name);}); PANELS.forEach(function(p){$("panel-"+p).classList.toggle("active",name===p);}); if(name==="hazard")buildOutputs(); window.scrollTo({top:0,behavior:"smooth"}); }
+  document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){switchTab(t.dataset.tab);});});
+  document.addEventListener("click",function(e){var t=e.target.closest?e.target.closest("[data-goto]"):null;if(t)switchTab(t.getAttribute("data-goto"));});
+
+  $("add-asset").addEventListener("click",function(){state.assets.push({name:"",lat:"",lng:"",cons:0});renderAssets();});
+  $("load-example").addEventListener("click",loadExample);
+  $("use-example").addEventListener("click",function(){loadExample();markDrop("dz-inv",true);markDrop("dz-tr",true);statusBox("inv-status","ok","Example assets loaded","<p class='hint'>12 Shaktoolik assets.</p>");statusBox("tr-status","ok","Example transects loaded","<p class='hint'>8 transects along the Norton Sound shore.</p>");buildOutputs();});
+  $("dl-readme").addEventListener("click",function(){downloadBlob(new Blob([readmeText()],{type:"text/plain;charset=utf-8"}),"README - Erosion Risk Tool.txt");});
+  function fnameBase(){return (state.community||"community").replace(/[^\w]+/g,"_");}
+  $("gen-inv-xlsx").addEventListener("click",function(){pullInv();try{downloadBlob(generateInventoryXlsx(),fnameBase()+"_asset_inventory.xlsx");}catch(e){alert("XLSX error: "+e.message);}});
+  $("gen-inv-docx").addEventListener("click",function(){pullInv();try{downloadBlob(generateInventoryDocx(),fnameBase()+"_asset_inventory.docx");}catch(e){alert("DOCX error: "+e.message);}});
+  $("gen-inv-pdf").addEventListener("click",function(){pullInv();generateInventoryPdf();});
+  $("gen-tr-xlsx").addEventListener("click",function(){pullInv();try{downloadBlob(generateTransectXlsx(),fnameBase()+"_transect_sheet.xlsx");}catch(e){alert("XLSX error: "+e.message);}});
+  $("gen-tr-pdf").addEventListener("click",function(){pullInv();generateTransectPdf();});
+  $("dl-pdf").addEventListener("click",downloadResultsPdf);
+  $("inv-file").addEventListener("change",function(e){handleFile(e.target.files[0],"inv");e.target.value="";});
+  $("tr-file").addEventListener("change",function(e){handleFile(e.target.files[0],"tr");e.target.value="";});
+  $("s-buffer").addEventListener("change",function(){state.settings.buffer=isFinite(num($("s-buffer").value))?num($("s-buffer").value):20;persist();buildOutputs();});
+  $("save-json").addEventListener("click",function(){persist();downloadBlob(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),fnameBase()+".json");});
+  $("load-json").addEventListener("change",function(e){var f=e.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{Object.assign(state,JSON.parse(rd.result));state.assets=state.assets||[];state.transects=state.transects||[];pushInv();renderAssets();syncSettings();alert("Loaded.");}catch(err){alert("Bad file: "+err.message);}};rd.readAsText(f);e.target.value="";});
+  ["dz-inv","dz-tr"].forEach(function(dzId){ var kind=dzId==="dz-inv"?"inv":"tr", inputId=kind+"-file";
+    var dz=$(dzId);
+    ["dragenter","dragover"].forEach(function(ev){dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.add("drag");});});
+    ["dragleave","dragend","drop"].forEach(function(ev){dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.remove("drag");});});
+    dz.addEventListener("drop",function(e){if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0],kind);});
+    dz.addEventListener("click",function(e){if(e.target.tagName!=="LABEL")$(inputId).click();});
+  });
+  document.addEventListener("change",function(e){if(e.target.closest("#panel-inventory"))persist();});
+  window.addEventListener("beforeunload",persist);
+
+  // test hook
+  window.CHT={state:state, parseInventory:parseInventory, parseTransects:parseTransects, csvToGrid:csvToGrid, xlsxToGrid:xlsxToGrid, docxToGrid:docxToGrid,
+    generateInventoryXlsx:generateInventoryXlsx, generateTransectXlsx:generateTransectXlsx, buildGeo:buildGeo, likelihood:likelihood, reached:reached,
+    riskScore:riskScore, riskBand:riskBand, loadExample:loadExample, buildOutputs:buildOutputs, buildAllPages:buildAllPages, buildResultsDoc:buildResultsDoc, hzLabel:hzLabel, readmeText:readmeText};
+
+  // init
+  restore(); pushInv(); renderAssets(); syncSettings();
+})();
+</script>
+</body>
+</html>
